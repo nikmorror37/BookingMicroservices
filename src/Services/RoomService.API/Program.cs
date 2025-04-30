@@ -1,10 +1,13 @@
-using CatalogService.API.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using RoomService.API.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<CatalogDbContext>(opts =>
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("CatalogDb")));
+var connectionString = builder.Configuration.GetConnectionString("RoomDb");
+
+builder.Services.AddDbContext<RoomDbContext>(opts =>
+    opts.UseSqlServer(connectionString));
+
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -19,7 +22,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
