@@ -1,4 +1,5 @@
 using PaymentService.API.Infrastructure.Data;
+using PaymentService.API.Infrastructure.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -12,6 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<PaymentDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("PaymentDb"))
 );
+
+//Register client to bank gateway
+builder.Services.AddScoped<IPaymentGatewayClient, PaymentGatewayClient>();
 
 //JWT Auth
 builder.Services

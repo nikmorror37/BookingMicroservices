@@ -1,4 +1,5 @@
 using PaymentService.API.Infrastructure.Data;
+using PaymentService.API.Infrastructure.Clients;
 using PaymentService.API.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +15,12 @@ namespace PaymentService.API.Controllers
     public class PaymentsController : ControllerBase
     {
         private readonly PaymentDbContext _context;
+        private readonly IPaymentGatewayClient _gateway; //Client for interaction with the bank
 
-        public PaymentsController(PaymentDbContext context)
+        public PaymentsController(PaymentDbContext context, IPaymentGatewayClient gateway)
         {
             _context = context;
+            _gateway = gateway;
         }
 
         [HttpGet]
@@ -72,6 +75,42 @@ namespace PaymentService.API.Controllers
             _context.Payments.Remove(payment);
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        // POST api/Payments/{id}/refund
+        [HttpPost("{id}/refund")]
+        [Authorize]  
+        public async Task<IActionResult> Refund(int id)
+        {
+            var payment = await _context.Payments.FindAsync(id);
+            if (payment == null)
+                return NotFound();
+
+            // allow return only for completed transactions
+            if (payment.Status != PaymentStatus.Completed)
+                return BadRequest("Only completed payments can be refunded.");
+
+            // call gateway
+            var ok = await _gateway.RefundAsync(payment.Id, payment.Amount);
+            if (!ok)
+            {
+                payment.Status = PaymentStatus.RefundError;
+                await _context.SaveChangesAsync();
+                return StatusCode(502, "Gateway refund failed");
+            }
+
+            // mark refund
+            payment.Status      = PaymentStatus.Refunded;
+            payment.RefundedAt  = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            // return the updated object
+            return Ok(new
+            {
+                payment.Id,
+                payment.Status,
+                payment.RefundedAt
+            });
         }
     }
 }

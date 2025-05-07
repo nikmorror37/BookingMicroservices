@@ -23,15 +23,21 @@ namespace BookingService.API.Controllers
     private readonly BookingDbContext _db;
     private readonly IRoomServiceClient _roomClient;
     private readonly IHotelServiceClient _hotelClient;
+    private readonly IPaymentServiceClient _paymentClient;
+    private readonly ILogger<BookingsController> _logger;
 
     public BookingsController(
         BookingDbContext db,
         IRoomServiceClient roomClient,
-        IHotelServiceClient hotelClient)
+        IHotelServiceClient hotelClient,
+        IPaymentServiceClient paymentClient,
+        ILogger<BookingsController> logger)
     {
         _db          = db;
         _roomClient  = roomClient;
         _hotelClient = hotelClient;
+        _paymentClient = paymentClient;
+        _logger = logger; //new
     }
 
         // GET api/bookings
@@ -268,6 +274,79 @@ namespace BookingService.API.Controllers
         _db.Bookings.Remove(booking);
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    // POST api/bookings/{id}/cancel
+    [HttpPost("{id}/cancel")]
+    //[HttpPatch("{id}/cancel")]
+    public async Task<ActionResult<BookingDetailDto>> Cancel(int id)
+    {
+        // Verify the user (same code as in Create/Get)
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        // Load the booking
+        var booking = await _db.Bookings.FindAsync(id);
+        if (booking == null || booking.UserId != userId)
+            return NotFound();
+
+        // Status must be Pending or Confirmed
+        if (booking.Status is not (BookingStatus.Pending or BookingStatus.Confirmed))
+            return BadRequest("Booking cannot be cancelled in its current status.");
+
+        // Trying to get money back
+        bool refundOk = true;
+        // if (booking.PaymentId.HasValue)
+        // {
+        //     refundOk = await _paymentClient.RefundAsync(booking.PaymentId.Value);
+        // }
+        string? errorReason = null;
+        try
+        {
+            if (booking.PaymentId.HasValue)
+            {
+                refundOk = await _paymentClient.RefundAsync(booking.PaymentId.Value);
+                if (!refundOk)
+                    errorReason = "Gateway returned failure";
+            }
+            else
+            {
+                refundOk = false;
+                errorReason = "No payment to refund";
+            }
+        }
+        catch (Exception ex)
+        {
+            refundOk    = false;
+            errorReason = ex.Message;
+            _logger.LogError(ex, "Refund failed for booking {BookingId}", booking.Id);
+        }
+
+        // Change status and date
+        booking.Status     = refundOk ? BookingStatus.Cancelled : BookingStatus.RefundError;
+        booking.IsCanceled = true;
+        booking.CanceledAt = DateTime.UtcNow;
+        booking.RefundErrorReason  = errorReason; //new
+        await _db.SaveChangesAsync();
+        
+
+        // Return detail-DTO
+        var roomDto  = await _roomClient.GetRoomByIdAsync(booking.RoomId);
+        var hotelDto = await _hotelClient.GetHotelByIdAsync(booking.HotelId);
+        var result = new BookingDetailDto
+        {
+            Id                = booking.Id,
+            CheckIn           = booking.CheckIn,
+            CheckOut          = booking.CheckOut,
+            Status            = booking.Status,
+            CanceledAt        = booking.CanceledAt,
+            RefundErrorReason = booking.RefundErrorReason,
+            Room              = roomDto,
+            Hotel             = hotelDto
+        };
+        return Ok(result);
     }
 
   }

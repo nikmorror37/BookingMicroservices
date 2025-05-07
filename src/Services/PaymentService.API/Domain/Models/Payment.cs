@@ -7,6 +7,16 @@ namespace PaymentService.API.Domain.Models
         public decimal Amount { get; set; }
         public string Currency { get; set; } = "USD";
         public DateTime PaidAt { get; set; }
-        // TODO: will add Status, Type
+        public PaymentStatus Status { get; set; } = PaymentStatus.Completed;
+        public DateTime? RefundedAt { get; set; }
+        // TODO: will add Type
+    }
+
+    public enum PaymentStatus
+    {
+        Pending,
+        Completed,
+        Refunded,
+        RefundError
     }
 }

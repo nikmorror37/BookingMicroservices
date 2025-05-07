@@ -7,6 +7,8 @@ namespace BookingService.API.Domain.Models
         public DateTime CheckIn  { get; set; }
         public DateTime CheckOut { get; set; }
         public BookingStatus Status { get; set; }
+        public DateTime? CanceledAt { get; set; }
+        public string? RefundErrorReason { get; set; } //new
         public RoomDto Room     { get; set; } = default!;
         public HotelDto Hotel { get; set; } = default!;
     }

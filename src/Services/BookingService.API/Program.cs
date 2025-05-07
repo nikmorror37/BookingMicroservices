@@ -28,6 +28,12 @@ builder.Services.AddHttpClient<IHotelServiceClient, HotelServiceClient>(client =
     client.BaseAddress = new Uri(builder.Configuration["Services:CatalogService"]);
 });
 
+// HttpClient for PaymentService
+builder.Services.AddHttpClient<IPaymentServiceClient, PaymentServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Services:PaymentService"]);
+});
+
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear(); //new
 
 // Auth + JWT

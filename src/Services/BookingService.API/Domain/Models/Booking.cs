@@ -11,9 +11,13 @@ namespace BookingService.API.Domain.Models
     public BookingStatus Status { get; set; }
 
     //new
-    // public bool IsCanceled { get; set; }
-    // public DateTime? CanceledAt { get; set; }
+    public int? PaymentId  { get; set; }
+    public bool IsCanceled { get; set; } = false;
+    public DateTime? CanceledAt { get; set; }
+    
+    public string? RefundErrorReason { get; set; } 
+
   }
 
-  public enum BookingStatus { Pending, Confirmed, Cancelled }
+  public enum BookingStatus { Pending, Confirmed, Cancelled, RefundError }
 }
