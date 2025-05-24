@@ -1,0 +1,64 @@
+@model IEnumerable<BookingWebApp.Services.HotelDto>
+@{
+    ViewData["Title"] = "Hotels";
+    var search = ViewBag.CurrentSearch as string;
+    int? minStars = ViewBag.CurrentMinStars as int?;
+    double? maxDistance = ViewBag.CurrentMaxDistance as double?;
+    var sort = ViewBag.CurrentSort as string;
+}
+<h2 class="mb-3">Hotel Catalog</h2>
+<form class="row g-2 align-items-end mb-4" method="get">
+  <div class="col-md-4">
+    <label class="form-label">Name</label>
+    <input class="form-control" name="search" placeholder="Search..." value="@search" />
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Min ★</label>
+    <select class="form-select" name="minStars">
+        <option value="">Any</option>
+        @for(int i=1;i<=5;i++){
+            <option value="@i" selected="@(minStars==i?"selected":null)">@i</option>
+        }
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Max distance (km)</label>
+    <input type="number" step="0.1" min="0" pattern="\d*(\.\d+)?" class="form-control" name="maxDistance" value="@maxDistance" oninput="if(this.value < 0) this.value = 0" />
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Sort by</label>
+    <select class="form-select" name="sort">
+        <option value="">Default</option>
+        <option value="stars_desc" selected="@(sort=="stars_desc"?"selected":null)">Stars ↓</option>
+        <option value="stars_asc" selected="@(sort=="stars_asc"?"selected":null)">Stars ↑</option>
+        <option value="name" selected="@(sort=="name"?"selected":null)">Name A-Z</option>
+    </select>
+  </div>
+  <div class="col-md-1 d-grid">
+    <button class="btn btn-primary">Filter</button>
+  </div>
+</form>
+<div class="row row-cols-1 row-cols-md-2 gy-4">
+@foreach(var h in Model){
+  <div class="col">
+    @await Html.PartialAsync("_HotelCard", h)
+  </div>
+}
+</div>
+
+<nav class="mt-4">
+  <ul class="pagination">
+    @{
+        int currentPage = ViewBag.Page;
+        bool hasPrev = currentPage>1;
+        bool hasNext = (bool)ViewBag.HasNext;
+    }
+    <li class="page-item @(hasPrev?"":"disabled")">
+        <a class="page-link" asp-route-page="@(currentPage-1)" asp-route-search="@search" asp-route-minStars="@minStars" asp-route-maxDistance="@maxDistance" asp-route-sort="@sort">Previous</a>
+    </li>
+    <li class="page-item active"><span class="page-link">@currentPage</span></li>
+    <li class="page-item @(hasNext?"":"disabled")">
+        <a class="page-link" asp-route-page="@(currentPage+1)" asp-route-search="@search" asp-route-minStars="@minStars" asp-route-maxDistance="@maxDistance" asp-route-sort="@sort">Next</a>
+    </li>
+  </ul>
+</nav> 

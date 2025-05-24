@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CatalogService.API.Controllers
 {
@@ -21,7 +22,7 @@ namespace CatalogService.API.Controllers
 
         /// GET api/hotels
         /// Support:
-        /// - search (fitter by Name или City)
+        /// - search (filter by Name or City)
         /// - minStars
         /// - maxDistance (Maximum distance to center)
         /// - page, pageSize (pagination)
@@ -29,7 +30,7 @@ namespace CatalogService.API.Controllers
         public async Task<ActionResult<IEnumerable<Hotel>>> Get(
             [FromQuery] string? search       = null,
             [FromQuery] int?    minStars     = null,
-            [FromQuery] double? maxDistance  = null,
+            [FromQuery] string? maxDistance = null,
             [FromQuery] int     page         = 1,
             [FromQuery] int     pageSize     = 20)
         {
@@ -38,6 +39,18 @@ namespace CatalogService.API.Controllers
                 return BadRequest("minStars should be in the range from 1 to 5.");
             if (page < 1 || pageSize < 1)
                 return BadRequest("page and pageSize must be positive numbers.");
+
+            // parse maxDistance considering comma or dot
+            double? maxDist = null;
+            if (!string.IsNullOrWhiteSpace(maxDistance))
+            {
+                var txt = maxDistance!.Replace(',', '.');
+                if (!double.TryParse(txt, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+                    return BadRequest("maxDistance is not a valid number.");
+                if (parsed < 0)
+                    return BadRequest("maxDistance must be non-negative.");
+                maxDist = parsed;
+            }
 
             // baseline IQueryable
             var query = _context.Hotels.AsQueryable();
@@ -53,9 +66,9 @@ namespace CatalogService.API.Controllers
             {
                 query = query.Where(h => h.Stars >= minStars.Value);
             }
-            if (maxDistance.HasValue)
+            if (maxDist.HasValue)
             {
-                query = query.Where(h => h.DistanceFromCenter <= maxDistance.Value);
+                query = query.Where(h => h.DistanceFromCenter <= maxDist.Value);
             }
 
             // total number (for front-line pagination)
@@ -106,6 +119,7 @@ namespace CatalogService.API.Controllers
 
         /// POST api/hotels
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Hotel>> Create([FromBody] Hotel hotel)
         {
             _context.Hotels.Add(hotel);
@@ -126,10 +140,11 @@ namespace CatalogService.API.Controllers
 
         /// PUT api/hotels/{id}
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] Hotel hotel)
         {
             if (id != hotel.Id)
-                return BadRequest("ID в URL и в теле должны совпадать.");
+                return BadRequest("ID in the URL and in the body must match.");
 
             _context.Entry(hotel).State = EntityState.Modified;
             await _context.SaveChangesAsync();
@@ -149,6 +164,7 @@ namespace CatalogService.API.Controllers
 
         /// DELETE api/hotels/{id}
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var hotel = await _context.Hotels.FindAsync(id);

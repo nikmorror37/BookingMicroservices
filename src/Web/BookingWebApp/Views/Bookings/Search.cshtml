@@ -1,0 +1,48 @@
+@using BookingWebApp.Services
+@model IEnumerable<RoomDto>
+@{
+    ViewData["Title"] = "Room Availability";
+    var hotels = (IList<HotelDto>)ViewBag.Hotels;
+}
+<h2>Find available rooms</h2>
+<form method="get" class="row row-cols-lg-auto g-2 align-items-center mb-3">
+  <div class="col-12">
+    <select class="form-select" name="hotelId" required>
+      <option value="">Select hotel</option>
+      @foreach(var h in hotels){
+        <option value="@h.Id" selected="@(ViewBag.SelectedHotelId==h.Id?"selected":null)">@h.Name</option>
+      }
+    </select>
+  </div>
+  <div class="col-12">
+    <input type="date" name="checkIn" class="form-control" value="@(ViewBag.CheckIn??"")" required />
+  </div>
+  <div class="col-12">
+    <input type="date" name="checkOut" class="form-control" value="@(ViewBag.CheckOut??"")" required />
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">Search</button>
+  </div>
+</form>
+@if(Model.Any()){
+<table class="table table-hover">
+<thead><tr><th>Room</th><th>Price</th><th></th></tr></thead>
+<tbody>
+@foreach(var r in Model){
+  <tr>
+    <td>@r.Number (@r.Type)</td>
+    <td>@r.Price.ToString("C")</td>
+    <td>
+      <form asp-action="Book" method="post">
+        <input type="hidden" name="hotelId" value="@r.HotelId" />
+        <input type="hidden" name="roomId" value="@r.Id" />
+        <input type="hidden" name="checkIn" value="@ViewBag.CheckIn" />
+        <input type="hidden" name="checkOut" value="@ViewBag.CheckOut" />
+        <button class="btn btn-success">Book</button>
+      </form>
+    </td>
+  </tr>
+}
+</tbody>
+</table>
+} 

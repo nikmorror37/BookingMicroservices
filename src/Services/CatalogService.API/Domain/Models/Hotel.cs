@@ -10,5 +10,6 @@ namespace CatalogService.API.Domain.Models
         public int Stars { get; set; }
         public double DistanceFromCenter { get; set; }
         public string? ImageUrl { get; set; }
+        public string? Description { get; set; }
     }
 }

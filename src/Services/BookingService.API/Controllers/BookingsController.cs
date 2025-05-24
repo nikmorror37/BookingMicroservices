@@ -12,6 +12,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using BookingMicro.Contracts.Events;
+using MassTransit;
+using System.Net.Http.Headers;
+using System.Threading;
+using Microsoft.AspNetCore.Http;
 
 namespace BookingService.API.Controllers
 {
@@ -25,84 +30,107 @@ namespace BookingService.API.Controllers
     private readonly IHotelServiceClient _hotelClient;
     private readonly IPaymentServiceClient _paymentClient;
     private readonly ILogger<BookingsController> _logger;
+    private readonly IPublishEndpoint      _publishEndpoint;
+    private readonly IMessageScheduler     _scheduler;
 
     public BookingsController(
         BookingDbContext db,
         IRoomServiceClient roomClient,
         IHotelServiceClient hotelClient,
         IPaymentServiceClient paymentClient,
-        ILogger<BookingsController> logger)
+        ILogger<BookingsController> logger,
+        IPublishEndpoint publishEndpoint,
+        IMessageScheduler scheduler)
     {
         _db          = db;
         _roomClient  = roomClient;
         _hotelClient = hotelClient;
         _paymentClient = paymentClient;
         _logger = logger; //new
+        _publishEndpoint = publishEndpoint;
+        _scheduler       = scheduler;
     }
 
-        // GET api/bookings
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<BookingDetailDto>>> Get()
+    // GET api/bookings
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<BookingDetailDto>>> Get(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        var isAdmin = User.IsInRole("Admin");
+
+        if (page < 1 || pageSize < 1)
+            return BadRequest("page and pageSize must be positive numbers.");
+
+        var q = _db.Bookings.AsQueryable();
+        if (!isAdmin)
+            q = q.Where(b => b.UserId == userId);
+
+        var totalCount = await q.CountAsync();
+
+        if (!Response.Headers.ContainsKey("X-Total-Count"))
+            Response.Headers.Append("X-Total-Count", totalCount.ToString());
+
+        var bookings = await q
+            .OrderByDescending(b => b.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var result = new List<BookingDetailDto>();
+        foreach (var b in bookings)
         {
-          // get the current user from the token
-          var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-              ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-          if (string.IsNullOrEmpty(userId))
-              return Unauthorized();
+            var roomDto  = await _roomClient.GetRoomByIdAsync(b.RoomId);
+            var hotelDto = await _hotelClient.GetHotelByIdAsync(b.HotelId);
 
-          // filter by userId
-          var own = await _db.Bookings
-              .Where(b => b.UserId == userId)
-              .ToListAsync();
-
-            var result = new List<BookingDetailDto>();
-            foreach (var b in own)
-            {
-                // Get room details
-                var room = await _roomClient.GetRoomByIdAsync(b.RoomId);
-                // Get hotel details
-                var hotel = await _hotelClient.GetHotelByIdAsync(b.HotelId);
-
-                result.Add(new BookingDetailDto
-                {
-                    Id       = b.Id,
-                    CheckIn  = b.CheckIn,
-                    CheckOut = b.CheckOut,
-                    Status   = b.Status,
-                    Room     = room,
-                    Hotel    = hotel
-                });
-            }
-
-            return Ok(result);
-        }
-
-
-    [HttpGet("{id}", Name = "GetBookingById")]
-        public async Task<ActionResult<BookingDetailDto>> Get(int id)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-              ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-            var b = await _db.Bookings.FindAsync(id);
-            if (b == null || b.UserId != userId) 
-              return NotFound();
-
-            var room  = await _roomClient.GetRoomByIdAsync(b.RoomId);
-            var hotel = await _hotelClient.GetHotelByIdAsync(b.HotelId);
-
-            var dto = new BookingDetailDto
+            result.Add(new BookingDetailDto
             {
                 Id       = b.Id,
                 CheckIn  = b.CheckIn,
                 CheckOut = b.CheckOut,
                 Status   = b.Status,
-                Room     = room,
-                Hotel    = hotel
-            };
-
-            return Ok(dto);
+                CanceledAt        = b.CanceledAt,
+                RefundErrorReason = b.RefundErrorReason,
+                PaymentId         = b.PaymentId,
+                Room              = roomDto,
+                Hotel             = hotelDto
+            });
         }
+
+        return Ok(result);
+    }
+
+    [HttpGet("{id}", Name = "GetBookingById")]
+    public async Task<ActionResult<BookingDetailDto>> Get(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+          ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        var b = await _db.Bookings.FindAsync(id);
+        if (b == null || b.UserId != userId) 
+          return NotFound();
+
+        var room  = await _roomClient.GetRoomByIdAsync(b.RoomId);
+        var hotel = await _hotelClient.GetHotelByIdAsync(b.HotelId);
+
+        var dto = new BookingDetailDto
+        {
+            Id       = b.Id,
+            CheckIn  = b.CheckIn,
+            CheckOut = b.CheckOut,
+            Status   = b.Status,
+            CanceledAt = b.CanceledAt,
+            RefundErrorReason = b.RefundErrorReason,
+            PaymentId = b.PaymentId,
+            Room     = room,
+            Hotel    = hotel
+        };
+
+        return Ok(dto);
+    }
 
     // GET api/bookings/available?hotelId=2&checkIn=2025-04-29&checkOut=2025-04-30
     [HttpGet("available", Name = "GetAvailableRooms")]
@@ -125,8 +153,9 @@ namespace BookingService.API.Controllers
           //Collect ID of rooms already booked in this range
           var overlappingRoomIds = await _db.Bookings
                 .Where(b =>
-                    //b.HotelId == hotelId &&
                     hotelRoomIds.Contains(b.RoomId) &&
+                    // считаем занятыми только активные брони (Pending/Confirmed)
+                    (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed) &&
                     b.CheckIn.Date < co &&
                     b.CheckOut.Date > ci
                 )
@@ -142,40 +171,6 @@ namespace BookingService.API.Controllers
 
           return Ok(available);
     }
-
-    
-
-    // [HttpPost]
-    // public async Task<ActionResult<Booking>> Create(Booking b)
-    // {
-    //   var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-    //   b.UserId = userId;
-
-    //   if (b.CheckOut <= b.CheckIn)
-    //             return BadRequest("Check-out date must be later than check-in date.");
-
-    //   //Make sure that such a room exists
-    //   var room = await _roomClient.GetRoomByIdAsync(b.RoomId);
-    //     if (room == null)
-    //      return BadRequest("Room not found");
-
-    //   // Check that there are no overlapping reservations for this period
-    //   bool isTaken = await _db.Bookings
-    //     .AnyAsync(x =>
-    //         x.RoomId == b.RoomId &&
-    //         x.CheckIn  < b.CheckOut &&
-    //         x.CheckOut > b.CheckIn
-    //     );
-    //   if (isTaken)
-    //     // 409 Conflict, if the room is booked
-    //     return Conflict("Room is already booked for the selected period");
-
-    //   b.Status = BookingStatus.Pending;
-
-    //   _db.Bookings.Add(b);
-    //   await _db.SaveChangesAsync();
-    //   return CreatedAtRoute("GetBookingById", new { id = b.Id }, b);
-    // }
 
     [HttpPost]
     public async Task<ActionResult<BookingDetailDto>> Create([FromBody] BookingCreateDto dto)
@@ -197,8 +192,9 @@ namespace BookingService.API.Controllers
 
         // have already booked for these dates?
         bool isTaken = await _db.Bookings.AnyAsync(x =>
-            x.RoomId   == dto.RoomId &&
-            x.CheckIn  < dto.CheckOut &&
+            x.RoomId == dto.RoomId &&
+            (x.Status == BookingStatus.Pending || x.Status == BookingStatus.Confirmed) &&
+            x.CheckIn < dto.CheckOut &&
             x.CheckOut > dto.CheckIn
         );
         if (isTaken)
@@ -217,6 +213,35 @@ namespace BookingService.API.Controllers
         _db.Bookings.Add(booking);
         await _db.SaveChangesAsync();
 
+        // NEW: publish domain events -------------------------------------------------
+        await _publishEndpoint.Publish(new BookingCreated
+        {
+            BookingId = booking.Id,
+            HotelId   = booking.HotelId,
+            RoomId    = booking.RoomId,
+            UserId    = booking.UserId,
+            CheckIn   = booking.CheckIn,
+            CheckOut  = booking.CheckOut
+        });
+
+        await _publishEndpoint.Publish(new RoomReserveRequested
+        {
+            BookingId = booking.Id,
+            HotelId   = booking.HotelId,
+            RoomId    = booking.RoomId,
+            CheckIn   = booking.CheckIn,
+            CheckOut  = booking.CheckOut
+        });
+
+        // schedule auto-cancellation after 10 minutes if the payment has not been completed
+        await _scheduler.SchedulePublish<CancelBookingTimeout>(
+            DateTime.UtcNow.AddMinutes(10),
+            new CancelBookingTimeout {
+                BookingId = booking.Id,
+                CreatedAt = DateTime.UtcNow
+            });
+        // ---------------------------------------------------------------------------
+
         // fill in a detailed answer
         var hotelDto = await _hotelClient.GetHotelByIdAsync(booking.HotelId);
         var detail = new BookingDetailDto
@@ -225,6 +250,9 @@ namespace BookingService.API.Controllers
             CheckIn  = booking.CheckIn,
             CheckOut = booking.CheckOut,
             Status   = booking.Status,
+            CanceledAt = booking.CanceledAt,
+            RefundErrorReason = booking.RefundErrorReason,
+            PaymentId = booking.PaymentId,
             Room     = roomDto,
             Hotel    = hotelDto
         };
@@ -296,41 +324,19 @@ namespace BookingService.API.Controllers
         if (booking.Status is not (BookingStatus.Pending or BookingStatus.Confirmed))
             return BadRequest("Booking cannot be cancelled in its current status.");
 
-        // Trying to get money back
-        bool refundOk = true;
-        // if (booking.PaymentId.HasValue)
-        // {
-        //     refundOk = await _paymentClient.RefundAsync(booking.PaymentId.Value);
-        // }
-        string? errorReason = null;
-        try
-        {
-            if (booking.PaymentId.HasValue)
-            {
-                refundOk = await _paymentClient.RefundAsync(booking.PaymentId.Value);
-                if (!refundOk)
-                    errorReason = "Gateway returned failure";
-            }
-            else
-            {
-                refundOk = false;
-                errorReason = "No payment to refund";
-            }
-        }
-        catch (Exception ex)
-        {
-            refundOk    = false;
-            errorReason = ex.Message;
-            _logger.LogError(ex, "Refund failed for booking {BookingId}", booking.Id);
-        }
-
-        // Change status and date
-        booking.Status     = refundOk ? BookingStatus.Cancelled : BookingStatus.RefundError;
+        // Mark booking as cancelled and publish event
+        booking.Status     = BookingStatus.Cancelled;
         booking.IsCanceled = true;
         booking.CanceledAt = DateTime.UtcNow;
-        booking.RefundErrorReason  = errorReason; //new
         await _db.SaveChangesAsync();
-        
+
+        await _publishEndpoint.Publish(new BookingCancelled
+        {
+            BookingId  = booking.Id,
+            CanceledAt = booking.CanceledAt!.Value,
+            RoomId     = booking.RoomId,
+            HasRefund  = booking.PaymentId.HasValue
+        });
 
         // Return detail-DTO
         var roomDto  = await _roomClient.GetRoomByIdAsync(booking.RoomId);
@@ -343,6 +349,7 @@ namespace BookingService.API.Controllers
             Status            = booking.Status,
             CanceledAt        = booking.CanceledAt,
             RefundErrorReason = booking.RefundErrorReason,
+            PaymentId         = booking.PaymentId,
             Room              = roomDto,
             Hotel             = hotelDto
         };

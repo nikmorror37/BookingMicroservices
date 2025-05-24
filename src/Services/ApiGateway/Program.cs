@@ -4,11 +4,15 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // add config from appsettings.json (ReverseProxy)
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+// if running inside container we may have Docker config
+builder.Configuration.AddJsonFile("appsettings.Docker.json", optional: true, reloadOnChange: true);
 
 // JWT-auth
 builder.Services
@@ -48,22 +52,46 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// after builder.Configuration.AddJsonFile("appsettings.json" ... ) add CORS & HealthChecks
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", p => p
+        .AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader());
+});
+
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Middleware
-app.UseHttpsRedirection();
+// REMOVE app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-if (app.Environment.IsDevelopment())
+// in pipeline, just after app.UseAuthorization();
+app.UseCors("AllowAll");
+
+// Accept X-Forwarded-* when running behind reverse proxies (nginx, docker networks, etc.)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
-    app.UseSwagger();             
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Gateway v1");
-    });
-}
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+// if (app.Environment.IsDevelopment())
+// {
+//     app.UseSwagger();             
+//     app.UseSwaggerUI(c =>
+//     {
+//         c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Gateway v1");
+//     });
+// }
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 // put proxy on whole pipeline
 app.MapReverseProxy(proxyPipeline =>
 {
@@ -74,5 +102,8 @@ app.MapReverseProxy(proxyPipeline =>
         await next();
     });
 });
+
+// before app.Run(), map health checks
+app.MapHealthChecks("/health");
 
 app.Run();

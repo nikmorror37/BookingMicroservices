@@ -71,6 +71,13 @@ namespace IdentityService.API.Controllers
                 new Claim(JwtRegisteredClaimNames.Email, user.Email!)
             };
 
+            // add role claims
+            var roles = await _userMgr.GetRolesAsync(user);
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
             var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

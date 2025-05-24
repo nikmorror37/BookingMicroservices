@@ -1,0 +1,46 @@
+@model IEnumerable<BookingWebApp.Services.RoomDto>
+@using BookingWebApp.Services
+@{
+    ViewData["Title"] = "Rooms Admin";
+    var hotels = ViewBag.Hotels as IList<HotelDto>;
+    int? selectedHotel = Context.Request.Query["hotelId"].Count>0 ? int.Parse(Context.Request.Query["hotelId"]) : (int?)null;
+}
+<h2 class="mb-3">Rooms (admin)</h2>
+<form method="get" class="row gy-2 gx-2 align-items-end mb-3">
+  <div class="col-md-4">
+    <label class="form-label">Hotel filter</label>
+    <select class="form-select" name="hotelId">
+      <option value="">All</option>
+      @foreach(var h in hotels){
+        <option value="@h.Id" selected="@(selectedHotel==h.Id)" >@h.Name</option>
+      }
+    </select>
+  </div>
+  <div class="col-md-2 d-grid">
+     <button class="btn btn-primary">Filter</button>
+  </div>
+  <div class="col-md-2 d-grid ms-auto">
+     <a asp-action="Create" class="btn btn-success">Create new</a>
+  </div>
+</form>
+<table class="table table-striped">
+ <thead><tr><th>ID</th><th>Hotel</th><th>Number</th><th>Type</th><th>Price</th><th></th></tr></thead>
+ <tbody>
+ @foreach(var r in Model){
+   var hotelName = hotels?.FirstOrDefault(h=>h.Id==r.HotelId)?.Name ?? r.HotelId.ToString();
+   <tr>
+     <td>@r.Id</td>
+     <td>@hotelName</td>
+     <td>@r.Number</td>
+     <td>@r.Type</td>
+     <td>@r.Price.ToString("C")</td>
+     <td>
+        <a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-id="@r.Id">Edit</a>
+        <form asp-action="Delete" asp-route-id="@r.Id" asp-route-hotelId="@selectedHotel" method="post" class="d-inline" onsubmit="return confirm('Delete this room?');">
+           <button class="btn btn-sm btn-danger">Delete</button>
+        </form>
+     </td>
+   </tr>
+ }
+ </tbody>
+</table> 

@@ -1,0 +1,59 @@
+@model BookingWebApp.Models.HotelDetailsVm
+@{
+    ViewData["Title"] = Model.Hotel.Name;
+    var checkInStr = Model.CheckIn?.ToString("yyyy-MM-dd") ?? string.Empty;
+    var checkOutStr = Model.CheckOut?.ToString("yyyy-MM-dd") ?? string.Empty;
+}
+<div class="mb-4">
+  <h2>@Model.Hotel.Name</h2>
+  <p>
+    @for(int i=0;i<Model.Hotel.Stars;i++){<i class="bi bi-star-fill text-warning"></i>}
+    <span class="ms-2">@Model.Hotel.Stars ★</span>
+  </p>
+</div>
+<div class="row mb-4">
+  <div class="col-md-6">
+    @{ var imgSrc = string.IsNullOrEmpty(Model.Hotel.ImageUrl) ? "https://placehold.co/800x500?text=Hotel" : (Model.Hotel.ImageUrl.StartsWith("http") ? Model.Hotel.ImageUrl : "http://localhost:8080" + Model.Hotel.ImageUrl); }
+    <img class="img-fluid rounded shadow-sm w-100" src="@imgSrc" alt="@Model.Hotel.Name" style="object-fit:cover;height:300px;" />
+  </div>
+  <div class="col-md-6">
+    <div class="bg-light p-3 rounded h-100">
+      <h5 class="mb-2">About this hotel</h5>
+      <p>@Model.Hotel.Address, @Model.Hotel.City, @Model.Hotel.Country</p>
+      <p><i class="bi bi-geo-alt-fill"></i> @Model.Hotel.DistanceFromCenter.ToString("0.#") km to city center</p>
+      @if(!string.IsNullOrEmpty(Model.Hotel.Description)){
+        <p class="mt-2">@Model.Hotel.Description</p>
+      }
+    </div>
+  </div>
+</div>
+<hr/>
+<h4 class="mb-3">Find available rooms</h4>
+<form class="row row-cols-lg-auto g-2 align-items-center mb-4">
+  <input type="hidden" name="id" value="@Model.Hotel.Id" />
+  <div class="col-12">
+    <input type="date" name="checkIn" class="form-control" value="@checkInStr" required />
+  </div>
+  <div class="col-12">
+    <input type="date" name="checkOut" class="form-control" value="@checkOutStr" required />
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">Search</button>
+  </div>
+</form>
+@if(Model.AvailableRooms is not null){
+  if(Model.AvailableRooms.Any()){
+    ViewBag.CheckIn = checkInStr;
+    ViewBag.CheckOut = checkOutStr;
+    ViewBag.HotelId = Model.Hotel.Id;
+    <div class="row row-cols-1 row-cols-md-2 gy-4">
+    @foreach(var r in Model.AvailableRooms){
+      <div class="col">
+        @await Html.PartialAsync("_RoomCard", r)
+      </div>
+    }
+    </div>
+  } else {
+    <div class="alert alert-warning">No rooms available for selected dates.</div>
+  }
+} 

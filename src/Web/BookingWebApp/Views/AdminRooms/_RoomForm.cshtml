@@ -1,0 +1,50 @@
+@model BookingWebApp.Controllers.RoomEditVm
+@{
+ var hotels=ViewBag.Hotels as IEnumerable<BookingWebApp.Services.HotelDto>;
+ var isCreate=ViewBag.IsCreate as bool? ?? false;
+ var action=isCreate?"Create":"Edit";
+}
+<form asp-action="@action" asp-route-id="@Model.Id" class="row g-3">
+ <div class="col-md-4">
+  <label class="form-label">Hotel</label>
+  <select asp-for="HotelId" class="form-select">
+   @foreach(var h in hotels){<option value="@h.Id" selected="@(Model.HotelId==h.Id)">@h.Name</option>}
+  </select>
+ </div>
+ <div class="col-md-2">
+  <label class="form-label">Number</label>
+  <input asp-for="Number" class="form-control" />
+ </div>
+ <div class="col-md-3">
+  <label class="form-label">Type</label>
+  <select asp-for="Type" class="form-select">
+   @foreach(var t in Enum.GetValues(typeof(BookingWebApp.Services.RoomType))){<option value="@t" selected="@(Model.Type== (BookingWebApp.Services.RoomType)t)">@t</option>}
+  </select>
+ </div>
+ <div class="col-md-3">
+  <label class="form-label">Price</label>
+  <input asp-for="Price" type="number" step="0.01" class="form-control" />
+ </div>
+ <div class="col-12">
+  <label class="form-label">Description</label>
+  <textarea asp-for="Description" rows="3" class="form-control"></textarea>
+ </div>
+ <div class="col-md-3">
+  <label class="form-label">Capacity</label>
+  <input asp-for="Capacity" type="number" class="form-control" />
+ </div>
+ <div class="col-md-3">
+  <label class="form-label">Beds</label>
+  <input asp-for="NumberOfBeds" type="number" class="form-control" />
+ </div>
+ <div class="col-md-2 align-self-end">
+  <div class="form-check">
+   <input class="form-check-input" asp-for="IsAvailable" />
+   <label class="form-check-label">Available</label>
+  </div>
+ </div>
+ <div class="col-12">
+  <button class="btn btn-primary">Save</button>
+  <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
+ </div>
+</form> 

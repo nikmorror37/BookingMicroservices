@@ -6,6 +6,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using MassTransit;
+using PaymentService.API.Consumers;
+using BookingMicro.Contracts.Events;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +20,8 @@ builder.Services.AddDbContext<PaymentDbContext>(opt =>
 
 //Register client to bank gateway
 builder.Services.AddScoped<IPaymentGatewayClient, PaymentGatewayClient>();
+
+//JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 //JWT Auth
 builder.Services
@@ -40,8 +46,47 @@ builder.Services
     };
   });
 
+// HttpClient to RoomService
+builder.Services.AddHttpClient<IRoomServiceClient, RoomServiceClient>(client =>
+{
+    var roomServiceUrl = builder.Configuration["Services:RoomService"] ?? throw new InvalidOperationException("RoomService URL not configured");
+    client.BaseAddress = new Uri(roomServiceUrl);
+});
+
+// MassTransit + RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    // register a consumer that will process BookingCancelled
+    x.AddConsumer<BookingCancelledConsumer>();
+    // NEW consumers
+    x.AddConsumer<BookingCreatedConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var evt = builder.Configuration.GetSection("EventBus");
+        cfg.Host(evt["Host"]!, evt["VirtualHost"]!, h =>
+        {
+            h.Username(evt["Username"]!);
+            h.Password(evt["Password"]!);
+        });
+
+        // Configure publishing
+        cfg.Publish<PaymentCreated>(e => e.ExchangeType = "fanout");
+
+        cfg.ReceiveEndpoint("payment-service-queue", e =>
+        {
+            // connect consumers
+            e.ConfigureConsumer<BookingCancelledConsumer>(context);
+            e.ConfigureConsumer<BookingCreatedConsumer>(context);
+        });
+    });
+});
+builder.Services.AddMassTransitHostedService();
+
+
 // Controllers + Swagger
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(opts => opts.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c => {
   c.SwaggerDoc("v1", new OpenApiInfo { Title = "PaymentService.API", Version = "v1" });
@@ -74,11 +119,16 @@ if (app.Environment.IsDevelopment()) {
   app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Apply EF Core migrations automatically
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
+    db.Database.Migrate();
+}
 
 app.Run();

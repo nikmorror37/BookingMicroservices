@@ -1,0 +1,30 @@
+@using BookingWebApp.Services
+@model BookingDto
+@{
+    ViewData["Title"] = "Booking Details";
+}
+<h2>Booking #@Model.Id</h2>
+<table class="table table-bordered w-50">
+ @{var st=(BookingStatus)Model.Status;var cls= st switch{BookingStatus.Pending=>"secondary",BookingStatus.Confirmed=>"success",BookingStatus.Cancelled=>"warning",BookingStatus.RefundError=>"danger",_=>"light"};}
+ <tr><th>Status</th><td><span class="badge bg-@cls">@st</span></td></tr>
+ <tr><th>Hotel</th><td>@Model.Hotel?.Name</td></tr>
+ <tr><th>Room</th><td>@Model.Room?.Number</td></tr>
+ <tr><th>Check-in</th><td>@Model.CheckIn.ToString("yyyy-MM-dd")</td></tr>
+ <tr><th>Check-out</th><td>@Model.CheckOut.ToString("yyyy-MM-dd")</td></tr>
+</table>
+@if(Model.Status== (int)BookingStatus.Pending){
+   <a class="btn btn-success" asp-controller="Bookings" asp-action="Checkout" asp-route-id="@Model.Id">Pay</a>
+} else if(Model.Status== (int)BookingStatus.RefundError){
+   <div class="alert alert-danger">Payment failed or was refunded. Please try again.</div>
+   <a class="btn btn-warning" asp-controller="Bookings" asp-action="Checkout" asp-route-id="@Model.Id">Retry payment</a>
+} else if(Model.Status== (int)BookingStatus.Confirmed){
+   <span class="text-success">Paid ✅</span>
+   <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="mt-2">
+       @* Antiforgery token will be added automatically by the form tag helper *@
+       <button class="btn btn-danger" onclick="return confirm('Cancel this booking?')">Cancel booking</button>
+   </form>
+} else if(Model.Status== (int)BookingStatus.Cancelled){
+   <span class="text-muted">Booking cancelled.</span>
+} else {
+   <span class="text-muted">Processing…</span>
+} 

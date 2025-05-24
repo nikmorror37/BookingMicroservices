@@ -85,9 +85,44 @@ if (app.Environment.IsDevelopment()) {
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Seed default roles (Admin, User) and an initial admin user from config
+using (var scope = app.Services.CreateScope())
+{
+    // Apply migrations
+    scope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.Migrate();
+    
+    var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<IdentityService.API.Domain.Models.ApplicationUser>>();
+
+    string[] roles = new[] { "Admin", "User" };
+    foreach (var role in roles)
+    {
+        if (!await roleMgr.RoleExistsAsync(role))
+        {
+            await roleMgr.CreateAsync(new IdentityRole(role));
+        }
+    }
+
+    // create admin user if not exists
+    var adminEmail = builder.Configuration["Admin:Email"];
+    var adminPass  = builder.Configuration["Admin:Password"];
+    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPass))
+    {
+        var admin = await userMgr.FindByEmailAsync(adminEmail);
+        if (admin == null)
+        {
+            admin = new IdentityService.API.Domain.Models.ApplicationUser { UserName = adminEmail, Email = adminEmail, FirstName = "Admin", LastName = "User" };
+            var res = await userMgr.CreateAsync(admin, adminPass);
+            if (res.Succeeded)
+            {
+                await userMgr.AddToRoleAsync(admin, "Admin");
+            }
+        }
+    }
+}
 
 app.Run();

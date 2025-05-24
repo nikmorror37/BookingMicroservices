@@ -1,0 +1,118 @@
+@model BookingWebApp.Models.PaymentVm
+@{
+    ViewData["Title"] = "Payment";
+    var nights=(Model.Booking.CheckOut-Model.Booking.CheckIn).Days;
+    var today = DateTime.UtcNow;
+    var minMonth = today.ToString("yyyy-MM");
+    var maxMonth = today.AddYears(10).ToString("yyyy-MM");
+}
+<h2>Payment for booking #@Model.Booking.Id</h2>
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Booking summary</h5>
+    <p><strong>Nights:</strong> @nights</p>
+    <p><strong>Total:</strong> @Model.TotalAmount.ToString("C")</p>
+  </div>
+</div>
+<form asp-action="Pay" method="post" class="needs-validation" novalidate>
+  <input type="hidden" name="id" value="@Model.Booking.Id" />
+  <div class="mb-3">
+    <label class="form-label">Card type</label>
+    <select class="form-select" name="cardType">
+      <option>Visa</option>
+      <option>MasterCard</option>
+    </select>
+  </div>
+  <div class="row g-2">
+    <div class="col-md-6">
+      <label class="form-label">Name on card</label>
+      <input class="form-control" name="cardName" maxlength="50" required pattern=".{1,50}" title="Card holder name (max 50 characters)" />
+      <div class="invalid-feedback">Name is required (max 50 characters).</div>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Card number</label>
+      <input class="form-control" name="cardNumber" inputmode="numeric" pattern="\d{16}" minlength="16" maxlength="16" required title="16-digit number, no spaces" />
+      <div class="invalid-feedback">Card number must be exactly 16 digits.</div>
+    </div>
+  </div>
+  <div class="row g-2 mt-2">
+    <div class="col-md-4">
+      <label class="form-label">Expiration (MM / YYYY)</label>
+      <div class="d-flex gap-2">
+        <select class="form-select" name="expMonth" required>
+          <option value="">MM</option>
+          @for (int m = 1; m <= 12; m++) {
+            <option value="@m.ToString("D2")">@m.ToString("D2")</option>
+          }
+        </select>
+        <select class="form-select" name="expYear" required>
+          <option value="">YYYY</option>
+          @for (int y = today.Year; y <= today.AddYears(10).Year; y++) {
+            <option value="@y">@y</option>
+          }
+        </select>
+      </div>
+      <div class="invalid-feedback">Select a valid expiration date.</div>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">CVV</label>
+      <input class="form-control" name="cvv" inputmode="numeric" pattern="\d{3}" minlength="3" maxlength="3" required title="3-digit CVV" />
+      <div class="invalid-feedback">CVV must be exactly 3 digits.</div>
+    </div>
+  </div>
+  <button class="btn btn-success mt-3">Pay</button>
+  <a asp-action="Details" asp-route-id="@Model.Booking.Id" class="btn btn-outline-secondary mt-3">Cancel</a>
+  <script>
+    // Bootstrap custom validation
+    (() => {
+      'use strict';
+      const forms = document.querySelectorAll('.needs-validation');
+      // disable past months helper
+      const yearSel = document.querySelector('select[name="expYear"]');
+      const monthSel = document.querySelector('select[name="expMonth"]');
+      const curYear = @today.Year;
+      const curMonth= @today.Month;
+
+      function updateMonths(){
+          const y = parseInt(yearSel.value);
+          Array.from(monthSel.options).forEach(opt=>{
+              if(opt.value==='') return;
+              const m = parseInt(opt.value);
+              opt.disabled = (y===curYear && m < curMonth);
+          });
+          // if currently selected month is disabled -> reset
+          if(monthSel.selectedOptions.length && monthSel.selectedOptions[0].disabled){
+              monthSel.value='';
+          }
+      }
+      yearSel.addEventListener('change',updateMonths);
+      updateMonths();
+
+      Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+          const month = form.querySelector('[name="expMonth"]').value;
+          const year  = form.querySelector('[name="expYear"]').value;
+
+          // additional validation for expiration date range
+          let expValid = true;
+          if(month === '' || year === '') expValid = false;
+          else {
+             const expDate = new Date(year, month - 1, 1);
+             const minDate = new Date('@minMonth-01');
+             const maxDate = new Date('@maxMonth-01');
+             if(expDate < minDate || expDate > maxDate) expValid = false;
+          }
+
+          if (!form.checkValidity() || !expValid) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add('was-validated');
+          if(!expValid){
+              const fb = form.querySelector('[name="expMonth"]').parentElement.nextElementSibling;
+          }
+        }, false);
+      });
+    })();
+  </script>
+</form> 

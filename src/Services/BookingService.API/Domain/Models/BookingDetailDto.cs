@@ -9,6 +9,7 @@ namespace BookingService.API.Domain.Models
         public BookingStatus Status { get; set; }
         public DateTime? CanceledAt { get; set; }
         public string? RefundErrorReason { get; set; } //new
+        public int? PaymentId { get; set; }
         public RoomDto Room     { get; set; } = default!;
         public HotelDto Hotel { get; set; } = default!;
     }

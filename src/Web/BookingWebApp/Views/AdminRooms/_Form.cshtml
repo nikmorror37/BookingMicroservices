@@ -1,0 +1,58 @@
+@model BookingWebApp.Controllers.RoomEditVm
+@using BookingWebApp.Services
+@{
+    var isCreate = ViewBag.IsCreate as bool? ?? false;
+    var action = isCreate?"Create":"Edit";
+    var hotels = ViewBag.Hotels as IEnumerable<HotelDto>;
+}
+<form asp-action="@action" asp-route-id="@Model.Id" enctype="multipart/form-data" class="row g-3">
+  <div class="col-md-4">
+    <label class="form-label">Hotel</label>
+    <select asp-for="HotelId" class="form-select" required>
+      @foreach(var h in hotels){
+        <option value="@h.Id" selected="@(Model.HotelId==h.Id)">@h.Name</option>
+      }
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Room #</label>
+    <input asp-for="Number" class="form-control" required />
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Type</label>
+    <select asp-for="Type" class="form-select">
+      @foreach(var t in Enum.GetValues(typeof(RoomType))){<option value="@t" selected="@(Model.Type== (RoomType)t)">@t</option>}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Price</label>
+    <input asp-for="Price" type="number" step="0.01" class="form-control" />
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Beds</label>
+    <input asp-for="NumberOfBeds" type="number" class="form-control" />
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Capacity</label>
+    <input asp-for="Capacity" type="number" class="form-control" />
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Available</label>
+    <input asp-for="IsAvailable" type="checkbox" class="form-check-input" />
+  </div>
+  <div class="col-12">
+    <label class="form-label">Description</label>
+    <textarea asp-for="Description" rows="3" class="form-control"></textarea>
+  </div>
+  <div class="col-12">
+    <label class="form-label">Image</label><br/>
+    @if(!string.IsNullOrEmpty(Model.RoomImageUrl)){
+        <img src="@Model.RoomImageUrl" style="max-height:150px;" class="mb-2" />
+    }
+    <input type="file" name="image" class="form-control" accept="image/*" />
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">Save</button>
+    <a asp-controller="AdminRooms" asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
+  </div>
+</form> 

@@ -41,6 +41,9 @@ namespace CatalogService.API.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<double>("DistanceFromCenter")
                         .HasColumnType("float");
 

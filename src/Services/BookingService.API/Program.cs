@@ -7,6 +7,9 @@ using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using MassTransit;
+using BookingService.API.Consumers;
+using BookingService.API.Infrastructure.Handlers;
 
 //JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear(); //new
 var builder = WebApplication.CreateBuilder(args);
@@ -19,20 +22,28 @@ builder.Services.AddDbContext<BookingDbContext>(opts =>
 // HttpClient for RoomService
 builder.Services.AddHttpClient<IRoomServiceClient, RoomServiceClient>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["Services:RoomService"]);
+    var roomServiceUrl = builder.Configuration["Services:RoomService"] ?? throw new InvalidOperationException("RoomService URL not configured");
+    client.BaseAddress = new Uri(roomServiceUrl);
 });
 
 // HttpClient for CatalogService
 builder.Services.AddHttpClient<IHotelServiceClient, HotelServiceClient>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["Services:CatalogService"]);
+    var catalogServiceUrl = builder.Configuration["Services:CatalogService"] ?? throw new InvalidOperationException("CatalogService URL not configured");
+    client.BaseAddress = new Uri(catalogServiceUrl);
 });
 
-// HttpClient for PaymentService
+// Register HttpContextAccessor and token propagation handler
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<BearerTokenHandler>();
+
+// HttpClient for PaymentService (with Bearer token propagation)
 builder.Services.AddHttpClient<IPaymentServiceClient, PaymentServiceClient>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["Services:PaymentService"]);
-});
+    var paymentServiceUrl = builder.Configuration["Services:PaymentService"] ?? throw new InvalidOperationException("PaymentService URL not configured");
+    client.BaseAddress = new Uri(paymentServiceUrl);
+})
+.AddHttpMessageHandler<BearerTokenHandler>();
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear(); //new
 
@@ -47,16 +58,16 @@ builder.Services
     {
         options.Events = new JwtBearerEvents
         {
-        OnAuthenticationFailed = ctx =>
-        {
-            Console.WriteLine("JWT Auth Failed: " + ctx.Exception.Message);
-            return Task.CompletedTask;
-        },
-        OnTokenValidated = ctx =>
-        {
-            Console.WriteLine("JWT Validated for: " + ctx.Principal.Identity.Name);
-            return Task.CompletedTask;
-        }
+            OnAuthenticationFailed = ctx =>
+            {
+                Console.WriteLine("JWT Auth Failed: " + ctx.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = ctx =>
+            {
+                Console.WriteLine("JWT Validated for: " + ctx.Principal?.Identity?.Name);
+                return Task.CompletedTask;
+            }
         };
         options.RequireHttpsMetadata = false;
         options.SaveToken            = true;
@@ -78,6 +89,43 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+// MassTransit + RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    // register consumers
+    x.AddConsumer<PaymentCreatedConsumer>();
+    x.AddConsumer<RoomReserveRejectedConsumer>();
+    x.AddConsumer<PaymentRefundedConsumer>();
+    x.AddConsumer<PaymentRefundFailedConsumer>();
+    x.AddConsumer<CancelBookingTimeoutConsumer>();
+
+    // enable delayed message scheduler
+    x.AddDelayedMessageScheduler();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.UseDelayedMessageScheduler();
+
+        var evt = builder.Configuration.GetSection("EventBus");
+        cfg.Host(evt["Host"]!, evt["VirtualHost"]!, h =>
+        {
+            h.Username(evt["Username"]!);
+            h.Password(evt["Password"]!);
+        });
+
+        cfg.ReceiveEndpoint("booking-service-queue", e =>
+        {
+            // connect consumers
+            e.ConfigureConsumer<PaymentCreatedConsumer>(context);
+            e.ConfigureConsumer<RoomReserveRejectedConsumer>(context);
+            e.ConfigureConsumer<PaymentRefundedConsumer>(context);
+            e.ConfigureConsumer<PaymentRefundFailedConsumer>(context);
+            e.ConfigureConsumer<CancelBookingTimeoutConsumer>(context);
+        });
+    });
+});
+builder.Services.AddMassTransitHostedService();
 
 // MVC + Swagger
 builder.Services.AddControllers();
@@ -116,11 +164,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Apply EF Core migrations automatically
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+    db.Database.Migrate();
+}
 
 app.Run();

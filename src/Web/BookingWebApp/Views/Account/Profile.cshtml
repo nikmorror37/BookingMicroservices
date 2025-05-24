@@ -1,0 +1,24 @@
+@model BookingWebApp.Services.UserDto
+@{
+    ViewData["Title"] = "Profile";
+}
+@if(TempData["ProfileUpdated"] != null){<div class="alert alert-success">Profile updated.</div>}
+<h2>Profile</h2>
+<table class="table table-bordered w-50">
+  <tr><th>Email</th><td>@Model.Email</td></tr>
+  <tr><th>First name</th><td>@Model.FirstName</td></tr>
+  <tr><th>Last name</th><td>@Model.LastName</td></tr>
+  @if(!string.IsNullOrEmpty(Model.Address)){
+    <tr><th>Address</th><td>@Model.Address</td></tr>
+  }
+  @if(!string.IsNullOrEmpty(Model.City)){
+    <tr><th>City</th><td>@Model.City</td></tr>
+  }
+  @if(!string.IsNullOrEmpty(Model.Country)){
+    <tr><th>Country</th><td>@Model.Country</td></tr>
+  }
+</table>
+<a asp-action="Edit" class="btn btn-primary me-2">Edit profile</a>
+<form asp-action="Logout" method="post" class="d-inline">
+    <button class="btn btn-outline-secondary">Logout</button>
+</form> 

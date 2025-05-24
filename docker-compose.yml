@@ -1,0 +1,174 @@
+version: "3.9"
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Your_password123
+    ports:
+      - "1433:1433"
+    networks:
+      - booking-net
+
+  rabbitmq:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbit
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "5675:5675"   # AMQP
+      - "15675:15675" # Management UI
+    networks:
+      - booking-net
+
+  identityservice:
+    build:
+      context: .
+      dockerfile: src/Services/IdentityService.API/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__IdentityDb=Server=sqlserver;Database=IdentityDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;Encrypt=False;
+      - EventBus__Host=rabbitmq
+      - Jwt__Key=32plusloooooooongkey_min32symbols
+      - Jwt__Issuer=IdentityService.API
+      - Jwt__Audience=BookingService.API
+      - ASPNETCORE_URLS=http://+:80
+    networks:
+      - booking-net
+
+  catalogservice:
+    build:
+      context: .
+      dockerfile: src/Services/CatalogService.API/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__CatalogDb=Server=sqlserver;Database=CatalogDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;Encrypt=False;
+      - EventBus__Host=rabbitmq
+      - Jwt__Key=32plusloooooooongkey_min32symbols
+      - Jwt__Issuer=IdentityService.API
+      - Jwt__Audience=BookingService.API
+      - ASPNETCORE_URLS=http://+:80
+    networks:
+      - booking-net
+
+  roomservice:
+    build:
+      context: .
+      dockerfile: src/Services/RoomService.API/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__RoomDb=Server=sqlserver;Database=RoomDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;Encrypt=False;
+      - EventBus__Host=rabbitmq
+      - Jwt__Key=32plusloooooooongkey_min32symbols
+      - Jwt__Issuer=IdentityService.API
+      - Jwt__Audience=BookingService.API
+      - ASPNETCORE_URLS=http://+:80
+    networks:
+      - booking-net
+
+  paymentservice:
+    build:
+      context: .
+      dockerfile: src/Services/PaymentService.API/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__PaymentDb=Server=sqlserver;Database=PaymentDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;Encrypt=False;
+      - EventBus__Host=rabbitmq
+      - Jwt__Key=32plusloooooooongkey_min32symbols
+      - Jwt__Issuer=IdentityService.API
+      - Jwt__Audience=BookingService.API
+      - ASPNETCORE_URLS=http://+:80
+      - Services__RoomService=http://roomservice
+    networks:
+      - booking-net
+
+  bookingservice:
+    build:
+      context: .
+      dockerfile: src/Services/BookingService.API/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+      roomservice:
+        condition: service_started
+      catalogservice:
+        condition: service_started
+      paymentservice:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__BookingDb=Server=sqlserver;Database=BookingDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;Encrypt=False;
+      - EventBus__Host=rabbitmq
+      - Jwt__Key=32plusloooooooongkey_min32symbols
+      - Jwt__Issuer=IdentityService.API
+      - Jwt__Audience=BookingService.API
+      - Services__RoomService=http://roomservice
+      - Services__CatalogService=http://catalogservice
+      - Services__PaymentService=http://paymentservice
+      - ASPNETCORE_URLS=http://+:80
+    networks:
+      - booking-net
+
+  apigateway:
+    build:
+      context: .
+      dockerfile: src/Services/ApiGateway/Dockerfile
+    depends_on:
+      catalogservice:
+        condition: service_started
+      roomservice:
+        condition: service_started
+      bookingservice:
+        condition: service_started
+      paymentservice:
+        condition: service_started
+      identityservice:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ReverseProxy__Clusters__catalogCluster__Destinations__catalog1__Address=http://catalogservice/
+      - ReverseProxy__Clusters__roomCluster__Destinations__room1__Address=http://roomservice/
+      - ReverseProxy__Clusters__bookingCluster__Destinations__booking1__Address=http://bookingservice/
+      - ReverseProxy__Clusters__paymentCluster__Destinations__payment1__Address=http://paymentservice/
+      - ReverseProxy__Clusters__identityCluster__Destinations__identity1__Address=http://identityservice/
+      - ReverseProxy__Routes__images__ClusterId=catalogCluster
+      - ReverseProxy__Routes__images__Match__Path=/api/images/{**catch-all}
+      - ReverseProxy__Routes__static__ClusterId=catalogCluster
+      - ReverseProxy__Routes__static__Match__Path=/images/{**catch-all}
+      - Jwt__Key=32plusloooooooongkey_min32symbols
+      - Jwt__Issuer=IdentityService.API
+      - Jwt__Audience=BookingService.API
+      - ASPNETCORE_URLS=http://+:80
+    ports:
+      - "8080:80"  # expose gateway externally
+    networks:
+      - booking-net
+
+networks:
+  booking-net:
+    driver: bridge 

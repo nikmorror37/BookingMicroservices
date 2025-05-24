@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using RoomService.API.Domain.Models;
 using RoomService.API.Infrastructure.Data;
 using RoomService.API.Dtos;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RoomService.API.Controllers
 {
@@ -28,7 +29,7 @@ namespace RoomService.API.Controllers
             [FromQuery] int      pageSize  = 20)
         {
             if (page < 1 || pageSize < 1)
-                return BadRequest("page и pageSize should be >= 1");
+                return BadRequest("page and pageSize should be >= 1");
 
             var q = _context.Rooms.AsQueryable();
 
@@ -75,6 +76,7 @@ namespace RoomService.API.Controllers
 
         // POST: api/rooms
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Room>> Create(Room room)
         {
             _context.Rooms.Add(room);
@@ -84,6 +86,7 @@ namespace RoomService.API.Controllers
 
         // PUT: api/rooms/id
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, Room room)
         {
             if (id != room.Id) return BadRequest();
@@ -94,6 +97,7 @@ namespace RoomService.API.Controllers
 
         // DELETE: api/rooms/id
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var room = await _context.Rooms.FindAsync(id);
