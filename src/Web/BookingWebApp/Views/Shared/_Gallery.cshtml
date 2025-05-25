@@ -2,11 +2,11 @@
 <div class="gallery mb-4">
     <div class="row g-2">
         <div class="col-md-8">
-            <img src="@(Model?.FirstOrDefault() ?? "/img/placeholder-hotel.jpg")" class="img-fluid w-100 h-100 object-fit-cover rounded" style="min-height:300px" data-bs-toggle="modal" data-bs-target="#galleryModal" />
+            <img src="@(Model?.FirstOrDefault() ?? "/img/placeholder-hotel.jpg")" class="img-fluid w-100 rounded gallery-main" data-bs-toggle="modal" data-bs-target="#galleryModal" />
         </div>
         <div class="col-md-4 d-flex flex-column gap-2">
             @foreach(var img in Model?.Skip(1).Take(3) ?? new List<string>()){
-                <img src="@img" class="img-fluid rounded flex-fill object-fit-cover" style="min-height:95px" data-bs-toggle="modal" data-bs-target="#galleryModal" />
+                <img src="@img" class="img-fluid rounded flex-fill object-fit-cover" style="height:108px;object-fit:cover;" data-bs-toggle="modal" data-bs-target="#galleryModal" />
             }
         </div>
     </div>

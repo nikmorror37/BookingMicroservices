@@ -1,29 +1,23 @@
 @model BookingWebApp.Services.HotelDto
 
-<div class="card mb-3">
-    <div class="row g-0">
-        <div class="col-md-4">
-            @{ var imgSrc = string.IsNullOrEmpty(Model.ImageUrl) ? "https://placehold.co/400x300?text=Hotel" : (Model.ImageUrl.StartsWith("http") ? Model.ImageUrl : "http://localhost:8080" + Model.ImageUrl); }
-            <img src="@imgSrc" class="img-fluid rounded-start" alt="@Model.Name" style="height:100%;object-fit:cover;">
+@{
+    var imgSrc = string.IsNullOrEmpty(Model.ImageUrl) ? "https://placehold.co/400x300?text=Hotel" : (Model.ImageUrl.StartsWith("http") ? Model.ImageUrl : "http://localhost:8080" + Model.ImageUrl);
+}
+
+<div class="card h-100 hotel-card">
+    <img src="@imgSrc" class="card-img-top" alt="@Model.Name" style="height:380px; object-fit:cover;">
+    <div class="card-body d-flex flex-column">
+        <h5 class="card-title">@Model.Name</h5>
+        <div class="mb-2">
+            @for(int i=0;i<Model.Stars;i++){<i class="bi bi-star-fill text-warning"></i>}
         </div>
-        <div class="col-md-8">
-            <div class="card-body">
-                <h5 class="card-title">@Model.Name</h5>
-                <div class="mb-2">
-                    @for(int i=0;i<Model.Stars;i++){<i class="bi bi-star-fill text-warning"></i>}
-                </div>
-                <p class="card-text">
-                    <small class="text-muted">@Model.Address, @Model.City, @Model.Country</small>
-                </p>
-                <p class="card-text">
-                    <i class="bi bi-geo-alt-fill"></i> @Model.DistanceFromCenter.ToString("0.#") km to city center
-                </p>
-                @if (!string.IsNullOrEmpty(Model.Description))
-                {
-                    <p class="card-text">@(Model.Description?.Length > 100 ? Model.Description.Substring(0, 100) + "..." : Model.Description)</p>
-                }
-                <a asp-controller="Hotels" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-primary">View Details</a>
-            </div>
-        </div>
+        <p class="card-text small text-muted">@Model.Address, @Model.City, @Model.Country</p>
+        <p class="card-text mb-2"><i class="bi bi-geo-alt-fill"></i> @Model.DistanceFromCenter.ToString("0.#") km to city center</p>
+        @if(!string.IsNullOrEmpty(Model.Description)){
+            <p class="card-text flex-grow-1">@(Model.Description.Length>100? Model.Description.Substring(0,100)+"...": Model.Description)</p>
+        } else {
+            <div class="flex-grow-1"></div>
+        }
+        <a asp-controller="Hotels" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-primary mt-auto">View Details</a>
     </div>
 </div> 

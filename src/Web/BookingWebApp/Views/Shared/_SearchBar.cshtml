@@ -6,11 +6,11 @@
     </div>
     <div class="col-md-2">
         <label class="form-label">Check-in</label>
-        <input type="date" name="checkIn" class="form-control" value="@Context.Request.Query["checkIn"]" />
+        <input type="date" id="checkIn" name="checkIn" class="form-control" value="@Context.Request.Query["checkIn"]" min="@DateTime.UtcNow.Date.ToString("yyyy-MM-dd")" />
     </div>
     <div class="col-md-2">
         <label class="form-label">Check-out</label>
-        <input type="date" name="checkOut" class="form-control" value="@Context.Request.Query["checkOut"]" />
+        <input type="date" id="checkOut" name="checkOut" class="form-control" value="@Context.Request.Query["checkOut"]" min="@DateTime.UtcNow.Date.AddDays(1).ToString("yyyy-MM-dd")" />
     </div>
     <div class="col-md-2">
         <label class="form-label">Guests</label>
@@ -23,4 +23,27 @@
     <div class="col-md-2 d-grid">
         <button class="btn btn-primary">Search</button>
     </div>
-</form> 
+</form>
+
+<script>
+  (function(){
+     const inEl = document.getElementById('checkIn');
+     const outEl = document.getElementById('checkOut');
+     if(!inEl||!outEl) return;
+     function setMin(){
+        if(inEl.value){
+           const d = new Date(inEl.value);
+           d.setDate(d.getDate()+1);
+           const minStr = d.toISOString().split('T')[0];
+           outEl.min = minStr;
+           if(outEl.value && outEl.value <= inEl.value){
+              outEl.value = '';
+           }
+        } else {
+           outEl.min = '';
+        }
+     }
+     inEl.addEventListener('change', setMin);
+     setMin();
+  })();
+</script> 

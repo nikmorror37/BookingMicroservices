@@ -3,6 +3,7 @@ using BookingWebApp.Services;
 using System.Linq;
 using System;
 using System.Collections.Generic;
+using Refit;
 
 namespace BookingWebApp.Controllers;
 
@@ -40,7 +41,14 @@ public class HotelsController:Controller
         var hotel = await _api.GetHotel(id);
         IList<RoomDto>? rooms = null;
         if(checkIn.HasValue && checkOut.HasValue){
-            rooms = await _api.AvailableRooms(new AvailableFilter(id,checkIn.Value,checkOut.Value));
+            try{
+                rooms = await _api.AvailableRooms(new AvailableFilter(id,checkIn.Value,checkOut.Value));
+            }
+            catch(Refit.ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest){
+                // API вернул 400 — скорее всего даты невалидные.
+                // Просто не показываем номера, оставив ModelState сообщение.
+                ModelState.AddModelError(string.Empty, "Please select a valid date range.");
+            }
         }
         var vm = new BookingWebApp.Models.HotelDetailsVm(hotel,rooms,checkIn,checkOut);
         return View(vm);

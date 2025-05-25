@@ -42,7 +42,7 @@ public interface IApiClient
 public record LoginRequest(string Email, string Password);
 public record LoginResponse(string Token);
 public record RegisterRequest(string Email,string Password,string FirstName,string LastName);
-public record UserDto(string Email,string FirstName,string LastName,string? Address,string? City,string? Country);
+public record UserDto(string Email,string FirstName,string LastName,string? Address,string? City,string? State,string? PostalCode,string? Country,DateTime? DateOfBirth);
 
 public record HotelFilter(string? Search,int? MinStars,double? MaxDistance,int Page=1,int PageSize=20);
 

@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Rooms Admin";
     var hotels = ViewBag.Hotels as IList<HotelDto>;
-    int? selectedHotel = Context.Request.Query["hotelId"].Count>0 ? int.Parse(Context.Request.Query["hotelId"]) : (int?)null;
+    int? selectedHotel = int.TryParse(Context.Request.Query["hotelId"], out var hid) ? hid : (int?)null;
 }
 <h2 class="mb-3">Rooms (admin)</h2>
 <form method="get" class="row gy-2 gx-2 align-items-end mb-3">

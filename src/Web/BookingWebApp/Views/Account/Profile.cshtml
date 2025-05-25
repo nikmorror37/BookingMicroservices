@@ -17,6 +17,15 @@
   @if(!string.IsNullOrEmpty(Model.Country)){
     <tr><th>Country</th><td>@Model.Country</td></tr>
   }
+  @if(!string.IsNullOrEmpty(Model.State)){
+    <tr><th>State</th><td>@Model.State</td></tr>
+  }
+  @if(!string.IsNullOrEmpty(Model.PostalCode)){
+    <tr><th>Postal code</th><td>@Model.PostalCode</td></tr>
+  }
+  @if(Model.DateOfBirth.HasValue){
+    <tr><th>Date of birth</th><td>@Model.DateOfBirth.Value.ToString("dd.MM.yyyy")</td></tr>
+  }
 </table>
 <a asp-action="Edit" class="btn btn-primary me-2">Edit profile</a>
 <form asp-action="Logout" method="post" class="d-inline">
