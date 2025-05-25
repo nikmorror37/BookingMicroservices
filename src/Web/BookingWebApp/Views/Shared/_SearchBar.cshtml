@@ -1,0 +1,26 @@
+@* Reusable search bar: location + date range *@
+<form asp-controller="Hotels" asp-action="Index" method="get" class="row g-2 align-items-end bg-light p-3 rounded shadow-sm">
+    <div class="col-md-4">
+        <label class="form-label">Destination</label>
+        <input type="text" name="search" class="form-control" placeholder="City or hotel name" value="@Context.Request.Query["search"]" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Check-in</label>
+        <input type="date" name="checkIn" class="form-control" value="@Context.Request.Query["checkIn"]" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Check-out</label>
+        <input type="date" name="checkOut" class="form-control" value="@Context.Request.Query["checkOut"]" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Guests</label>
+        <select name="guests" class="form-select">
+            @for(int g=1; g<=4; g++){
+                <option value="@g" selected="@(Context.Request.Query["guests"] == g.ToString() ? "selected" : null)">@g adult@(g>1?"s":"")</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2 d-grid">
+        <button class="btn btn-primary">Search</button>
+    </div>
+</form> 

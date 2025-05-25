@@ -44,18 +44,27 @@
                                </ul>
                             </li>
                         }
-                        <li class="nav-item ms-auto">
-                            @if(Context.Session.GetString("jwt") is not null){
-                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Profile">Profile</a>
-                            } else {
-                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
-                            }
-                        </li>
                         @if(Context.Session.GetString("jwt") is not null){
+                            <li class="nav-item dropdown ms-auto">
+                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle"></i> Account
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">Profile</a></li>
+                                    <li><hr class="dropdown-divider"/></li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" class="px-3">
+                                            <button type="submit" class="dropdown-item btn btn-link p-0">Logout</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        } else {
+                            <li class="nav-item ms-auto">
+                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+                            </li>
                             <li class="nav-item">
-                                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                                    <button class="btn btn-link nav-link text-dark" type="submit">Logout</button>
-                                </form>
+                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a>
                             </li>
                         }
                     </ul>
@@ -77,6 +86,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @await Html.PartialAsync("_Toast")
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

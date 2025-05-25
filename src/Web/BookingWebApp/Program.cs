@@ -17,7 +17,8 @@ builder.Services.AddSession();
 // typed HttpClient registration replaced with Refit
 builder.Services.AddHttpClient<IApiClient, ApiClient>(c =>
 {
-    c.BaseAddress = new Uri("http://localhost:8080");
+    var gatewayBase = builder.Configuration["GatewayBase"] ?? "http://localhost:8080";
+    c.BaseAddress = new Uri(gatewayBase);
 }).AddHttpMessageHandler<AuthHeaderHandler>();
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

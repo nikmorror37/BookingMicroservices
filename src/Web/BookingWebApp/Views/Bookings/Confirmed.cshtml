@@ -1,0 +1,12 @@
+@model BookingWebApp.Services.BookingDto
+@{
+    ViewData["Title"] = "Booking confirmed";
+}
+<div class="text-center mt-5">
+    <i class="bi bi-check-circle-fill text-success" style="font-size:4rem"></i>
+    <h2 class="mt-3">Booking confirmed!</h2>
+    <p>Your trip to <strong>@Model.Hotel.Name</strong> is booked from <br/>
+       @Model.CheckIn.ToString("dd MMM") – @Model.CheckOut.ToString("dd MMM").
+    </p>
+    <a asp-controller="Bookings" asp-action="Index" class="btn btn-primary">View my trips</a>
+</div> 

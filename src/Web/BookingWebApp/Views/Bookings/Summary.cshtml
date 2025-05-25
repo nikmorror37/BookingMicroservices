@@ -1,0 +1,35 @@
+@model BookingWebApp.Services.BookingDto
+@{
+    ViewData["Title"] = "Booking summary";
+}
+<h2 class="mb-4">Review your stay</h2>
+<div class="row g-5">
+    <div class="col-lg-7">
+        <form asp-action="Confirm" method="post" class="needs-validation" novalidate>
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="mb-3">
+                <label class="form-label">First name</label>
+                <input name="FirstName" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Last name</label>
+                <input name="LastName" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="Email" class="form-control" required />
+            </div>
+            <button class="btn btn-primary">Confirm and proceed to payment</button>
+        </form>
+    </div>
+    <aside class="col-lg-5">
+        <div class="card shadow-sm">
+            <img src="@Model.Hotel.ImageUrl ?? "/img/placeholder-hotel.jpg"" class="card-img-top" />
+            <div class="card-body">
+                <h5 class="card-title">@Model.Hotel.Name</h5>
+                <p class="card-text small text-muted">@Model.CheckIn.ToString("dd MMM yyyy") – @Model.CheckOut.ToString("dd MMM yyyy")</p>
+                <h4 class="text-end">@((Model.Room.Price * Math.Max(1, (Model.CheckOut-Model.CheckIn).Days)).ToString("C"))</h4>
+            </div>
+        </div>
+    </aside>
+</div> 

@@ -1,0 +1,30 @@
+@{
+    ViewData["Title"] = "Admin dashboard";
+}
+<h2 class="mb-4">Admin dashboard</h2>
+<div class="row text-center">
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="display-6">@ViewBag.Hotels</h1>
+                <p class="text-muted">Hotels</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="display-6">@ViewBag.Rooms</h1>
+                <p class="text-muted">Rooms</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="display-6">@ViewBag.Bookings</h1>
+                <p class="text-muted">Bookings</p>
+            </div>
+        </div>
+    </div>
+</div> 

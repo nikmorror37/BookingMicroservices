@@ -169,6 +169,22 @@ services:
     networks:
       - booking-net
 
+  bookingwebapp:
+    build:
+      context: .
+      dockerfile: src/Web/BookingWebApp/Dockerfile
+    depends_on:
+      apigateway:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - GatewayBase=http://apigateway
+      - ASPNETCORE_URLS=http://+:80
+    ports:
+      - "8081:80"
+    networks:
+      - booking-net
+
 networks:
   booking-net:
     driver: bridge 

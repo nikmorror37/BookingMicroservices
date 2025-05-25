@@ -43,15 +43,16 @@ public class BookingsController : Controller
     [HttpPost]
     public async Task<IActionResult> Book(int hotelId,int roomId,DateTime checkIn,DateTime checkOut)
     {
+        BookingDto booking;
         try
         {
-            await _api.CreateBooking(new NewBookingDto(hotelId,roomId,checkIn,checkOut));
+            booking = await _api.CreateBooking(new NewBookingDto(hotelId,roomId,checkIn,checkOut));
         }
         catch(ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             return RedirectToAction("Login","Account");
         }
-        return RedirectToAction("Index");
+        return RedirectToAction("Summary", new{ id = booking.Id });
     }
 
     // GET /Bookings
@@ -87,6 +88,24 @@ public class BookingsController : Controller
         }
     }
 
+    // GET /Bookings/Summary/{id}
+    [HttpGet]
+    public async Task<IActionResult> Summary(int id)
+    {
+        var dto = await _api.GetBookingById(id);
+        return View(dto);
+    }
+
+    // POST /Bookings/Confirm
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Confirm(int id,string firstName,string lastName,string email)
+    {
+        // Guest data could be forwarded to API later; for demo we just keep in TempData
+        TempData["Toast"] = "Guest details saved. Please complete payment.";
+        return RedirectToAction("Checkout", new { id });
+    }
+
     [HttpPost]
     public async Task<IActionResult> Pay(int id)
     {
@@ -98,7 +117,15 @@ public class BookingsController : Controller
         {
             return RedirectToAction("Login","Account");
         }
-        return RedirectToAction("Details",new{id});
+        return RedirectToAction("Confirmed", new { id });
+    }
+
+    // GET /Bookings/Confirmed/{id}
+    [HttpGet]
+    public async Task<IActionResult> Confirmed(int id)
+    {
+        var dto = await _api.GetBookingById(id);
+        return View(dto);
     }
 
     [HttpPost]

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220" fill="none">
+  <!-- Globe -->
+  <circle cx="110" cy="110" r="90" stroke="#2563EB" stroke-width="4" fill="#EFF6FF"/>
+  <!-- Latitude lines -->
+  <ellipse cx="110" cy="110" rx="70" ry="25" stroke="#2563EB" stroke-width="2"/>
+  <ellipse cx="110" cy="110" rx="70" ry="45" stroke="#2563EB" stroke-width="2"/>
+  <!-- Longitude lines -->
+  <path d="M110 20v180" stroke="#2563EB" stroke-width="2"/>
+  <path d="M40 110h140" stroke="#2563EB" stroke-width="2"/>
+  <!-- Pin -->
+  <path d="M110 60a18 18 0 1 1 0 36a18 18 0 0 1 0-36zm0 0v40" stroke="#F97316" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="110" cy="78" r="6" fill="#F97316"/>
+</svg>
