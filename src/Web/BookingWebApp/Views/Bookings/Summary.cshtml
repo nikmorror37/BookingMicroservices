@@ -1,6 +1,9 @@
 @model BookingWebApp.Services.BookingDto
 @{
     ViewData["Title"] = "Booking summary";
+    var nights = Math.Max(1,(Model.CheckOut-Model.CheckIn).Days);
+    var img = string.IsNullOrEmpty(Model.Hotel.ImageUrl)? "/img/placeholder-hotel.jpg" : (Model.Hotel.ImageUrl.StartsWith("http")?Model.Hotel.ImageUrl : "http://localhost:8080"+Model.Hotel.ImageUrl);
+    var total = Model.Room.Price * nights;
 }
 <h2 class="mb-4">Review your stay</h2>
 <div class="row g-5">
@@ -24,11 +27,17 @@
     </div>
     <aside class="col-lg-5">
         <div class="card shadow-sm">
-            <img src="@Model.Hotel.ImageUrl ?? "/img/placeholder-hotel.jpg"" class="card-img-top" />
+            <img src="@img" class="card-img-top" style="height:200px;object-fit:cover;" />
             <div class="card-body">
                 <h5 class="card-title">@Model.Hotel.Name</h5>
-                <p class="card-text small text-muted">@Model.CheckIn.ToString("dd MMM yyyy") – @Model.CheckOut.ToString("dd MMM yyyy")</p>
-                <h4 class="text-end">@((Model.Room.Price * Math.Max(1, (Model.CheckOut-Model.CheckIn).Days)).ToString("C"))</h4>
+                <p class="card-text small text-muted">@Model.CheckIn.ToString("dd MMM yyyy") – @Model.CheckOut.ToString("dd MMM yyyy") (@nights night@(nights>1?"s":""))</p>
+                <p class="card-text mb-0">$@Model.Room.Price.ToString("0.00") <span class="text-muted small">/ night</span></p>
+                <p class="card-text mb-0">Type: <strong>@Model.Room.Type</strong></p>
+                <p class="card-text text-muted small">No breakfast included</p>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span class="fw-semibold">Total to pay:</span>
+                    <span class="h4 fw-bold mb-0">$@total.ToString("0.00")</span>
+                </div>
             </div>
         </div>
     </aside>

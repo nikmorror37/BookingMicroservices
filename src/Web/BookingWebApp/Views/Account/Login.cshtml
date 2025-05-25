@@ -2,10 +2,13 @@
     ViewData["Title"]="Login";
 }
 <h2>Login</h2>
+@if(!ViewData.ModelState.IsValid){
+  <div class="alert alert-danger">@ViewData.ModelState[string.Empty]?.Errors.First().ErrorMessage</div>
+}
 <form method="post" class="w-25">
   <div class="mb-3">
     <label class="form-label">Email</label>
-    <input type="email" name="email" class="form-control" required />
+    <input type="email" name="email" value="@ViewBag.Email" class="form-control" required />
   </div>
   <div class="mb-3">
     <label class="form-label">Password</label>

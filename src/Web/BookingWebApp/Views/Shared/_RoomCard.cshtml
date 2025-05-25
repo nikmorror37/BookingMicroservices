@@ -3,17 +3,17 @@
     var checkIn = ViewBag.CheckIn as string;
     var checkOut = ViewBag.CheckOut as string;
     var hotelId = ViewBag.HotelId;
-    var imgSrc = string.IsNullOrEmpty(Model.RoomImageUrl) ? "https://placehold.co/300x200?text=Room" : (Model.RoomImageUrl.StartsWith("http") ? Model.RoomImageUrl : "http://localhost:8080" + Model.RoomImageUrl);
+    var imgSrc = string.IsNullOrEmpty(Model.RoomImageUrl) ? "https://placehold.co/600x400?text=Room" : (Model.RoomImageUrl.StartsWith("http") ? Model.RoomImageUrl : "http://localhost:8080" + Model.RoomImageUrl);
 }
 <div class="card h-100">
-  <img src="@imgSrc" class="card-img-top" style="height:160px;object-fit:cover;" alt="Room image">
+  <img src="@imgSrc" class="card-img-top" style="height:320px;object-fit:cover;" alt="Room image">
   <div class="card-body d-flex flex-column">
     <h6 class="card-title">@Model.Type.ToString()</h6>
     <p class="card-text mb-2">Room #: @Model.Number</p>
     @if(!string.IsNullOrEmpty(Model.Description)){
       <p class="small text-muted">@Model.Description</p>
     }
-    <p class="fw-bold mb-3">@Model.Price.ToString("C") / night</p>
+    <p class="fw-bold mb-3">$@Model.Price.ToString("0.00") / night</p>
     <div class="mt-auto">
       <form method="post" asp-controller="Bookings" asp-action="Book" onsubmit="this.querySelector('button').disabled=true;">
         <input type="hidden" name="hotelId" value="@hotelId" />

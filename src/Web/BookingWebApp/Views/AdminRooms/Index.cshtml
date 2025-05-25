@@ -33,7 +33,7 @@
      <td>@hotelName</td>
      <td>@r.Number</td>
      <td>@r.Type</td>
-     <td>@r.Price.ToString("C")</td>
+     <td>$@r.Price.ToString("0.00")</td>
      <td>
         <a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-id="@r.Id">Edit</a>
         <form asp-action="Delete" asp-route-id="@r.Id" asp-route-hotelId="@selectedHotel" method="post" class="d-inline" onsubmit="return confirm('Delete this room?');">

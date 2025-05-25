@@ -5,6 +5,7 @@
     int? minStars = ViewBag.CurrentMinStars as int?;
     double? maxDistance = ViewBag.CurrentMaxDistance as double?;
     var sort = ViewBag.CurrentSort as string;
+    ViewBag.NoSticky = true;
 }
 @await Html.PartialAsync("_SearchFilters")
 <h2 class="mb-3">Hotel Catalog</h2>

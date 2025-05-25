@@ -1,0 +1,12 @@
+@model int
+@{
+    // statuses mapping
+    string text; string cls;
+    switch(Model){
+        case 1: text="Confirmed"; cls="success"; break;
+        case 2: text="Cancelled"; cls="warning"; break;
+        case 3: text="Error"; cls="danger"; break;
+        default: text="Pending"; cls="secondary"; break;
+    }
+}
+<span class="badge bg-@cls">@text</span> 

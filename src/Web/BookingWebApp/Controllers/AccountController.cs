@@ -18,9 +18,22 @@ public class AccountController : Controller
     [HttpPost]
     public async Task<IActionResult> Login(string email,string password)
     {
-        var res=await _api.Login(new LoginRequest(email,password));
-        _ctx.HttpContext!.Session.SetString("jwt",res.Token);
-        return RedirectToAction("Index","Hotels");
+        try{
+            var res=await _api.Login(new LoginRequest(email,password));
+            _ctx.HttpContext!.Session.SetString("jwt",res.Token);
+            return RedirectToAction("Index","Hotels");
+        }
+        catch(ApiException ex) when (ex.StatusCode==HttpStatusCode.BadRequest || ex.StatusCode==HttpStatusCode.Unauthorized)
+        {
+            ModelState.AddModelError(string.Empty,"Invalid email or password.");
+            ViewBag.Email=email;
+            return View();
+        }
+        catch(HttpRequestException){
+            ModelState.AddModelError(string.Empty,"Invalid email or password.");
+            ViewBag.Email=email;
+            return View();
+        }
     }
 
     [HttpGet]
@@ -68,8 +81,10 @@ public class AccountController : Controller
                 LastName   = me.LastName,
                 Address    = me.Address,
                 City       = me.City,
+                State      = me.State,
+                PostalCode = me.PostalCode,
                 Country    = me.Country,
-                // State и PostalCode пока не приходят из API
+                DateOfBirth = me.DateOfBirth
             };
             return View(vm);
         }

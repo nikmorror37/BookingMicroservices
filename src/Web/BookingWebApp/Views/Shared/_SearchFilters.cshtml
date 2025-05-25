@@ -7,8 +7,10 @@
     var minStars = Context.Request.Query["minStars"].ToString();
     var maxDist  = Context.Request.Query["maxDistance"].ToString();
     var sort     = Context.Request.Query["sort"].ToString();
+    bool sticky = !(ViewBag.NoSticky??false);
+    var cardCls = sticky? "card shadow-sm rounded-4 mb-4 filters-sticky" : "card shadow-sm rounded-4 mb-4";
 }
-<div class="card shadow-sm rounded-4 mb-4 filters-sticky">
+<div class="@cardCls">
   <div class="card-body">
     <form method="get" asp-controller="Hotels" asp-action="Index" class="row g-3 align-items-end">
       <!-- row 1 -->

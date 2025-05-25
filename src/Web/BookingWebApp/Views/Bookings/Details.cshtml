@@ -1,30 +1,48 @@
 @using BookingWebApp.Services
 @model BookingDto
 @{
-    ViewData["Title"] = "Booking Details";
+    ViewData["Title"] = $"Booking #{Model.Id}";
+    var nights = Math.Max(1,(Model.CheckOut-Model.CheckIn).Days);
+    var total = Model.Room.Price * nights;
+    var rawImg = !string.IsNullOrEmpty(Model.Room.RoomImageUrl) ? Model.Room.RoomImageUrl : Model.Hotel.ImageUrl;
+    var img = string.IsNullOrEmpty(rawImg)? "/img/placeholder-hotel.jpg" : (rawImg.StartsWith("http")?rawImg : "http://localhost:8080"+rawImg);
+    var st=(BookingStatus)Model.Status;
 }
-<h2>Booking #@Model.Id</h2>
-<table class="table table-bordered w-50">
- @{var st=(BookingStatus)Model.Status;var cls= st switch{BookingStatus.Pending=>"secondary",BookingStatus.Confirmed=>"success",BookingStatus.Cancelled=>"warning",BookingStatus.RefundError=>"danger",_=>"light"};}
- <tr><th>Status</th><td><span class="badge bg-@cls">@st</span></td></tr>
- <tr><th>Hotel</th><td>@Model.Hotel?.Name</td></tr>
- <tr><th>Room</th><td>@Model.Room?.Number</td></tr>
- <tr><th>Check-in</th><td>@Model.CheckIn.ToString("yyyy-MM-dd")</td></tr>
- <tr><th>Check-out</th><td>@Model.CheckOut.ToString("yyyy-MM-dd")</td></tr>
-</table>
-@if(Model.Status== (int)BookingStatus.Pending){
-   <a class="btn btn-success" asp-controller="Bookings" asp-action="Checkout" asp-route-id="@Model.Id">Pay</a>
-} else if(Model.Status== (int)BookingStatus.RefundError){
-   <div class="alert alert-danger">Payment failed or was refunded. Please try again.</div>
-   <a class="btn btn-warning" asp-controller="Bookings" asp-action="Checkout" asp-route-id="@Model.Id">Retry payment</a>
-} else if(Model.Status== (int)BookingStatus.Confirmed){
-   <span class="text-success">Paid ✅</span>
-   <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="mt-2">
-       @* Antiforgery token will be added automatically by the form tag helper *@
-       <button class="btn btn-danger" onclick="return confirm('Cancel this booking?')">Cancel booking</button>
-   </form>
-} else if(Model.Status== (int)BookingStatus.Cancelled){
-   <span class="text-muted">Booking cancelled.</span>
-} else {
-   <span class="text-muted">Processing…</span>
-} 
+<h2 class="mb-4">Booking #@Model.Id</h2>
+<div class="card shadow-sm mb-4" style="max-width:900px">
+  <div class="row g-0">
+    <div class="col-md-5">
+      <img src="@img" class="img-fluid rounded-start" style="height:220px;object-fit:cover;width:100%" />
+    </div>
+    <div class="col-md-7 d-flex flex-column">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <h5 class="card-title mb-0">@Model.Hotel.Name</h5>
+          @await Html.PartialAsync("_BookingBadge", Model.Status)
+        </div>
+        <p class="text-muted mb-1">@Model.Hotel.Address</p>
+        <p class="mb-1">Room <strong>@Model.Room.Number</strong> • @Model.Room.Type</p>
+        <p class="small mb-1">@Model.CheckIn.ToString("dd MMM yyyy") – @Model.CheckOut.ToString("dd MMM yyyy") (@nights night@(nights>1?"s":""))</p>
+        <p class="small mb-1">@Model.Room.Description</p>
+        <p class="small mb-1">No breakfast included</p>
+        <p class="small mb-1">Price per night: <strong>$@Model.Room.Price.ToString("0.00")</strong></p>
+        <h5 class="mt-auto">Total: $@total.ToString("0.00")</h5>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="mb-4">
+ @if(st==BookingStatus.Pending){
+    <a class="btn btn-success" asp-controller="Bookings" asp-action="Checkout" asp-route-id="@Model.Id">Pay now</a>
+ } else if(st==BookingStatus.RefundError){
+    <div class="alert alert-danger d-inline-block me-2 mb-0">Payment failed / refunded.</div>
+    <a class="btn btn-warning" asp-controller="Bookings" asp-action="Checkout" asp-route-id="@Model.Id">Retry payment</a>
+ } else if(st==BookingStatus.Confirmed){
+    <span class="text-success me-3"><i class="bi bi-credit-card-2-front-fill"></i> Paid</span>
+    <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Cancel this booking?');">
+        <button class="btn btn-outline-danger">Cancel booking</button>
+    </form>
+ } else if(st==BookingStatus.Cancelled){
+    <span class="text-muted">Booking cancelled.</span>
+ }
+</div> 

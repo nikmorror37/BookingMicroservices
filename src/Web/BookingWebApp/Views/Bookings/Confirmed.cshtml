@@ -1,12 +1,40 @@
 @model BookingWebApp.Services.BookingDto
 @{
     ViewData["Title"] = "Booking confirmed";
+    var nights = Math.Max(1,(Model.CheckOut-Model.CheckIn).Days);
+    var total = Model.Room.Price * nights;
+    var img = string.IsNullOrEmpty(Model.Hotel.ImageUrl)? "/img/placeholder-hotel.jpg" : (Model.Hotel.ImageUrl.StartsWith("http")?Model.Hotel.ImageUrl : "http://localhost:8080"+Model.Hotel.ImageUrl);
 }
-<div class="text-center mt-5">
-    <i class="bi bi-check-circle-fill text-success" style="font-size:4rem"></i>
-    <h2 class="mt-3">Booking confirmed!</h2>
-    <p>Your trip to <strong>@Model.Hotel.Name</strong> is booked from <br/>
-       @Model.CheckIn.ToString("dd MMM") – @Model.CheckOut.ToString("dd MMM").
-    </p>
-    <a asp-controller="Bookings" asp-action="Index" class="btn btn-primary">View my trips</a>
-</div> 
+<div class="container my-5" style="max-width:900px;">
+  <div class="card shadow-sm">
+    <div class="row g-0 h-100">
+      <!-- Details left -->
+      <div class="col-md-6 d-flex flex-column">
+        <img src="@img" class="img-fluid rounded-start" style="height:200px;object-fit:cover;width:100%">
+        <div class="p-3 flex-fill d-flex flex-column">
+          <h5 class="mb-1">@Model.Hotel.Name</h5>
+          <p class="text-muted mb-1">@Model.Hotel.Address</p>
+          <p class="text-muted mb-1">Room: <strong>@Model.Room.Type</strong> • #@Model.Room.Number</p>
+          @if(!string.IsNullOrEmpty(Model.Room.Description)){
+            <p class="small mb-1">@Model.Room.Description</p>
+          }
+          <p class="small mb-1">@Model.CheckIn.ToString("dd MMM yyyy") – @Model.CheckOut.ToString("dd MMM yyyy") (@nights night@(nights>1?"s":""))</p>
+          <p class="small mb-1">Price per night: <strong>$@Model.Room.Price.ToString("0.00")</strong></p>
+          <h5 class="mt-auto">Total paid: $@total.ToString("0.00")</h5>
+        </div>
+      </div>
+      <!-- Status right -->
+      <div class="col-md-6 d-flex flex-column justify-content-center text-center p-4 booking-status">
+        <i class="bi bi-check-circle-fill text-success" style="font-size:3rem"></i>
+        <h3 class="mt-3">Booking confirmed!</h3>
+        <p>Your trip to <strong>@Model.Hotel.Name</strong><br/>is booked from @Model.CheckIn.ToString("dd MMM") – @Model.CheckOut.ToString("dd MMM").</p>
+        <a asp-controller="Bookings" asp-action="Index" class="btn btn-primary mt-2 align-self-center">View my trips</a>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  @@media (max-width: 767.98px){
+    .booking-status{padding-top:1.5rem;padding-bottom:1.5rem}
+  }
+</style> 

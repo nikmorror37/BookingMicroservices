@@ -2,36 +2,55 @@
 @{
     ViewData["Title"] = "Payment";
     var nights=(Model.Booking.CheckOut-Model.Booking.CheckIn).Days;
+    var price = Model.Booking.Room.Price;
+    var total = Model.TotalAmount;
+    var img = string.IsNullOrEmpty(Model.Booking.Hotel.ImageUrl)? "/img/placeholder-hotel.jpg" : (Model.Booking.Hotel.ImageUrl.StartsWith("http")?Model.Booking.Hotel.ImageUrl : "http://localhost:8080"+Model.Booking.Hotel.ImageUrl);
     var today = DateTime.UtcNow;
+    string baseUrl = "http://localhost:8080";
     var minMonth = today.ToString("yyyy-MM");
     var maxMonth = today.AddYears(10).ToString("yyyy-MM");
 }
 <h2>Payment for booking #@Model.Booking.Id</h2>
 <div class="card mb-4">
-  <div class="card-body">
-    <h5 class="card-title">Booking summary</h5>
-    <p><strong>Nights:</strong> @nights</p>
-    <p><strong>Total:</strong> @Model.TotalAmount.ToString("C")</p>
+  <div class="row g-0">
+    <div class="col-md-4">
+      <img src="@img" class="img-fluid rounded-start" style="height:190px;object-fit:cover;width:100%" />
+    </div>
+    <div class="col-md-8">
+      <div class="card-body">
+        <h5 class="card-title mb-1">@Model.Booking.Hotel.Name</h5>
+        <p class="card-text mb-1 text-muted">Room: <strong>@Model.Booking.Room.Type</strong> • #@Model.Booking.Room.Number</p>
+        <p class="card-text mb-1 text-muted">@Model.Booking.CheckIn.ToString("dd MMM yyyy") – @Model.Booking.CheckOut.ToString("dd MMM yyyy") (@nights night@(nights>1?"s":""))</p>
+        <p class="card-text mb-1">Price per night: <strong>$@price.ToString("0.00")</strong></p>
+        <h4 class="mt-2">Total: $@total.ToString("0.00")</h4>
+      </div>
+    </div>
   </div>
 </div>
 <form asp-action="Pay" method="post" class="needs-validation" novalidate>
   <input type="hidden" name="id" value="@Model.Booking.Id" />
   <div class="mb-3">
-    <label class="form-label">Card type</label>
-    <select class="form-select" name="cardType">
-      <option>Visa</option>
-      <option>MasterCard</option>
-    </select>
+    <label class="form-label d-block">Card type</label>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <input class="btn-check" type="radio" name="cardType" id="visa" value="Visa" checked>
+      <label class="btn btn-outline-secondary payment-option" for="visa"><img src="@(baseUrl)/images/paymentSystems/visa.svg" alt="Visa" height="24"></label>
+
+      <input class="btn-check" type="radio" name="cardType" id="mc" value="MasterCard">
+      <label class="btn btn-outline-secondary payment-option" for="mc"><img src="@(baseUrl)/images/paymentSystems/mc.svg" alt="MasterCard" height="24"></label>
+
+      <input class="btn-check" type="radio" name="cardType" id="amex" value="Amex">
+      <label class="btn btn-outline-secondary payment-option" for="amex"><img src="@(baseUrl)/images/paymentSystems/amex.svg" alt="Amex" height="24"></label>
+    </div>
   </div>
   <div class="row g-2">
     <div class="col-md-6">
       <label class="form-label">Name on card</label>
-      <input class="form-control" name="cardName" maxlength="50" required pattern=".{1,50}" title="Card holder name (max 50 characters)" />
+      <input class="form-control" name="cardName" maxlength="50" required pattern=".{1,50}" />
       <div class="invalid-feedback">Name is required (max 50 characters).</div>
     </div>
     <div class="col-md-6">
       <label class="form-label">Card number</label>
-      <input class="form-control" name="cardNumber" inputmode="numeric" pattern="\d{16}" minlength="16" maxlength="16" required title="16-digit number, no spaces" />
+      <input class="form-control" name="cardNumber" inputmode="numeric" pattern="\d{16}" minlength="16" maxlength="16" required />
       <div class="invalid-feedback">Card number must be exactly 16 digits.</div>
     </div>
   </div>
@@ -56,12 +75,15 @@
     </div>
     <div class="col-md-2">
       <label class="form-label">CVV</label>
-      <input class="form-control" name="cvv" inputmode="numeric" pattern="\d{3}" minlength="3" maxlength="3" required title="3-digit CVV" />
+      <input class="form-control" name="cvv" inputmode="numeric" pattern="\d{3}" minlength="3" maxlength="3" required />
       <div class="invalid-feedback">CVV must be exactly 3 digits.</div>
     </div>
   </div>
   <button class="btn btn-success mt-3">Pay</button>
   <a asp-action="Details" asp-route-id="@Model.Booking.Id" class="btn btn-outline-secondary mt-3">Cancel</a>
+  <style>
+    .payment-option img{pointer-events:none;}
+  </style>
   <script>
     // Bootstrap custom validation
     (() => {

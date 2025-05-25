@@ -31,7 +31,7 @@
 @foreach(var r in Model){
   <tr>
     <td>@r.Number (@r.Type)</td>
-    <td>@r.Price.ToString("C")</td>
+    <td>$@r.Price.ToString("0.00")</td>
     <td>
       <form asp-action="Book" method="post">
         <input type="hidden" name="hotelId" value="@r.HotelId" />

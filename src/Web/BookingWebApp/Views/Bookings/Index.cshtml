@@ -6,44 +6,22 @@
     bool hasPrev = currentPage>1;
     bool hasNext = ViewBag.HasNext??false;
 }
-<h2>My Bookings</h2>
-<table class="table table-hover">
-<thead><tr><th>ID</th><th>Hotel</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th></th><th></th></tr></thead>
-<tbody>
-@foreach(var b in Model){
-  <tr>
-    <td>@b.Id</td>
-    <td>@b.Hotel.Name</td>
-    <td>@b.Room.Number</td>
-    <td>@b.CheckIn.ToString("yyyy-MM-dd")</td>
-    <td>@b.CheckOut.ToString("yyyy-MM-dd")</td>
-    @{var st=(BookingStatus)b.Status;var cls= st switch{BookingStatus.Pending=>"secondary",BookingStatus.Confirmed=>"success",BookingStatus.Cancelled=>"warning",BookingStatus.RefundError=>"danger",_=>"light"};}
-    <td><span class="badge bg-@cls">@st</span></td>
-    <td><a asp-action="Details" asp-route-id="@b.Id">Details</a></td>
-    <td>
-        @if(st==BookingStatus.Pending || st==BookingStatus.RefundError){
-            <a class="btn btn-sm btn-outline-success" asp-action="Checkout" asp-route-id="@b.Id">
-                @(st==BookingStatus.Pending?"Pay":"Retry pay")
-            </a>
-        } else if(st==BookingStatus.Confirmed){
-            <form asp-action="Cancel" asp-route-id="@b.Id" method="post" class="d-inline">
-                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel booking #@b.Id ?')">Cancel</button>
-            </form>
-        }
-    </td>
-  </tr>
-}
-</tbody>
-</table>
-
-<nav class="mt-4">
-  <ul class="pagination">
-    <li class="page-item @(hasPrev?"":"disabled")">
-        <a class="page-link" asp-route-page="@(currentPage-1)">Previous</a>
-    </li>
-    <li class="page-item active"><span class="page-link">@currentPage</span></li>
-    <li class="page-item @(hasNext?"":"disabled")">
-        <a class="page-link" asp-route-page="@(currentPage+1)">Next</a>
-    </li>
-  </ul>
-</nav> 
+<h2 class="mb-3">My Bookings</h2>
+@if(!Model.Any()){
+  <div class="alert alert-info">You have no bookings yet. <a asp-controller="Hotels" asp-action="Index">Search hotels</a></div>
+} else {
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    @foreach(var b in Model){
+      <div class="col">
+        @await Html.PartialAsync("_BookingCard", b)
+      </div>
+    }
+  </div>
+  <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item @(hasPrev?"":"disabled")"><a class="page-link" asp-route-page="@(currentPage-1)">Previous</a></li>
+        <li class="page-item active"><span class="page-link">@currentPage</span></li>
+        <li class="page-item @(hasNext?"":"disabled")"><a class="page-link" asp-route-page="@(currentPage+1)">Next</a></li>
+    </ul>
+  </nav>
+} 

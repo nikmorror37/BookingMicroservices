@@ -41,6 +41,9 @@ public class HotelsController:Controller
         var hotel = await _api.GetHotel(id);
         IList<RoomDto>? rooms = null;
         if(checkIn.HasValue && checkOut.HasValue){
+            if(HttpContext.Session.GetString("jwt") is null){
+                return RedirectToAction("Login","Account");
+            }
             try{
                 rooms = await _api.AvailableRooms(new AvailableFilter(id,checkIn.Value,checkOut.Value));
             }
