@@ -105,7 +105,7 @@ using (var scope = app.Services.CreateScope())
     if(!db.Rooms.Any())
     {
         db.Rooms.AddRange(
-            // Hilton Midtown (hotelId 1)
+            // Hilton Warsaw (hotelId 1)
             new RoomService.API.Domain.Models.Room {
                 HotelId = 1,
                 Number = "101",

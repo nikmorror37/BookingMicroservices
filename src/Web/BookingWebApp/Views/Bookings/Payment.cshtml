@@ -1,12 +1,18 @@
 @model BookingWebApp.Models.PaymentVm
+@using BookingWebApp.Extensions
+@inject IConfiguration Config
 @{
     ViewData["Title"] = "Payment";
     var nights=(Model.Booking.CheckOut-Model.Booking.CheckIn).Days;
     var price = Model.Booking.Room.Price;
     var total = Model.TotalAmount;
-    var img = string.IsNullOrEmpty(Model.Booking.Hotel.ImageUrl)? "/img/placeholder-hotel.jpg" : (Model.Booking.Hotel.ImageUrl.StartsWith("http")?Model.Booking.Hotel.ImageUrl : "http://localhost:8080"+Model.Booking.Hotel.ImageUrl);
     var today = DateTime.UtcNow;
-    string baseUrl = "http://localhost:8080";
+    //var img = string.IsNullOrEmpty(Model.Booking.Hotel.ImageUrl)? "/img/placeholder-hotel.jpg" : (Model.Booking.Hotel.ImageUrl.StartsWith("http")?Model.Booking.Hotel.ImageUrl : "http://localhost:8080"+Model.Booking.Hotel.ImageUrl);
+    //string baseUrl = "http://localhost:8080";
+    var gateway = Config["GatewayBase"] ?? "http://localhost:8080";
+    var img = string.IsNullOrEmpty(Model.Booking.Hotel.ImageUrl)
+              ? "/img/placeholder-hotel.jpg"
+              : Model.Booking.Hotel.ImageUrl.ToGatewayUrl(gateway);
     var minMonth = today.ToString("yyyy-MM");
     var maxMonth = today.AddYears(10).ToString("yyyy-MM");
 }
@@ -33,13 +39,13 @@
     <label class="form-label d-block">Card type</label>
     <div class="d-flex align-items-center gap-2 flex-wrap">
       <input class="btn-check" type="radio" name="cardType" id="visa" value="Visa" checked>
-      <label class="btn btn-outline-secondary payment-option" for="visa"><img src="@(baseUrl)/images/paymentSystems/visa.svg" alt="Visa" height="24"></label>
+      <label class="btn btn-outline-secondary payment-option" for="visa"><img src="@(gateway)/images/paymentSystems/visa.svg" alt="Visa" height="24"></label>
 
       <input class="btn-check" type="radio" name="cardType" id="mc" value="MasterCard">
-      <label class="btn btn-outline-secondary payment-option" for="mc"><img src="@(baseUrl)/images/paymentSystems/mc.svg" alt="MasterCard" height="24"></label>
+      <label class="btn btn-outline-secondary payment-option" for="mc"><img src="@(gateway)/images/paymentSystems/mc.svg" alt="MasterCard" height="24"></label>
 
       <input class="btn-check" type="radio" name="cardType" id="amex" value="Amex">
-      <label class="btn btn-outline-secondary payment-option" for="amex"><img src="@(baseUrl)/images/paymentSystems/amex.svg" alt="Amex" height="24"></label>
+      <label class="btn btn-outline-secondary payment-option" for="amex"><img src="@(gateway)/images/paymentSystems/amex.svg" alt="Amex" height="24"></label>
     </div>
   </div>
   <div class="row g-2">

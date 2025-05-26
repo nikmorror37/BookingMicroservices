@@ -1,11 +1,17 @@
 @using BookingWebApp.Services
+@using BookingWebApp.Extensions          
+@inject IConfiguration Config
 @model BookingDto
 @{
     ViewData["Title"] = $"Booking #{Model.Id}";
     var nights = Math.Max(1,(Model.CheckOut-Model.CheckIn).Days);
     var total = Model.Room.Price * nights;
     var rawImg = !string.IsNullOrEmpty(Model.Room.RoomImageUrl) ? Model.Room.RoomImageUrl : Model.Hotel.ImageUrl;
-    var img = string.IsNullOrEmpty(rawImg)? "/img/placeholder-hotel.jpg" : (rawImg.StartsWith("http")?rawImg : "http://localhost:8080"+rawImg);
+    var gateway = Config["GatewayBase"] ?? "http://localhost:8080";
+    var img = string.IsNullOrEmpty(rawImg)
+              ? "/img/placeholder-hotel.jpg"
+              : rawImg.ToGatewayUrl(gateway);
+    //var img = string.IsNullOrEmpty(rawImg)? "/img/placeholder-hotel.jpg" : (rawImg.StartsWith("http")?rawImg : "http://localhost:8080"+rawImg);
     var st=(BookingStatus)Model.Status;
 }
 <h2 class="mb-4">Booking #@Model.Id</h2>

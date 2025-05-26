@@ -1,8 +1,14 @@
 @model BookingWebApp.Services.BookingDto
+@using BookingWebApp.Extensions
+@inject IConfiguration Config
 @{
     ViewData["Title"] = "Booking summary";
     var nights = Math.Max(1,(Model.CheckOut-Model.CheckIn).Days);
-    var img = string.IsNullOrEmpty(Model.Hotel.ImageUrl)? "/img/placeholder-hotel.jpg" : (Model.Hotel.ImageUrl.StartsWith("http")?Model.Hotel.ImageUrl : "http://localhost:8080"+Model.Hotel.ImageUrl);
+    var gateway = Config["GatewayBase"] ?? "http://localhost:8080";   
+    var img = string.IsNullOrEmpty(Model.Hotel.ImageUrl)            
+              ? "/img/placeholder-hotel.jpg"
+              : Model.Hotel.ImageUrl.ToGatewayUrl(gateway);
+    //var img = string.IsNullOrEmpty(Model.Hotel.ImageUrl)? "/img/placeholder-hotel.jpg" : (Model.Hotel.ImageUrl.StartsWith("http")?Model.Hotel.ImageUrl : "http://localhost:8080"+Model.Hotel.ImageUrl);
     var total = Model.Room.Price * nights;
 }
 <h2 class="mb-4">Review your stay</h2>

@@ -1,7 +1,12 @@
 @model BookingWebApp.Services.HotelDto
-
+@using BookingWebApp.Extensions
+@inject IConfiguration Config
 @{
-    var imgSrc = string.IsNullOrEmpty(Model.ImageUrl) ? "https://placehold.co/400x300?text=Hotel" : (Model.ImageUrl.StartsWith("http") ? Model.ImageUrl : "http://localhost:8080" + Model.ImageUrl);
+    var gateway = Config["GatewayBase"] ?? "http://localhost:8080";          // базовый URL шлюза
+    var imgSrc = string.IsNullOrEmpty(Model.ImageUrl)
+                 ? "https://placehold.co/400x300?text=Hotel"
+                 : Model.ImageUrl.ToGatewayUrl(gateway);
+    //var imgSrc = string.IsNullOrEmpty(Model.ImageUrl) ? "https://placehold.co/400x300?text=Hotel" : (Model.ImageUrl.StartsWith("http") ? Model.ImageUrl : "http://localhost:8080" + Model.ImageUrl);
 }
 
 <div class="card h-100 hotel-card">

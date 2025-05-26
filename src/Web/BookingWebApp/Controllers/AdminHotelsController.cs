@@ -37,10 +37,11 @@ public class AdminHotelsController:Controller
         if(!ModelState.IsValid)
             return View(vm);
 
-        if(image!=null && image.Length>0)
+        if (image != null && image.Length > 0)
         {
             var res = await _api.UploadImage(image);
-            vm.ImageUrl = res.ImageUrl.StartsWith("/") ? "http://localhost:8080" + res.ImageUrl : res.ImageUrl;
+            vm.ImageUrl = res.ImageUrl;
+            //vm.ImageUrl = res.ImageUrl.StartsWith("/") ? "http://localhost:8080" + res.ImageUrl : res.ImageUrl;
         }
 
         var req = new HotelUpdateRequest(vm.Id, vm.Name, vm.Address, vm.City, vm.Country, vm.Stars, vm.DistanceFromCenter, vm.ImageUrl, vm.Description);
@@ -62,10 +63,11 @@ public class AdminHotelsController:Controller
     public async Task<IActionResult> Create(HotelEditVm vm,IFormFile? image)
     {
         if(!ModelState.IsValid) return View("Create",vm);
-        if(image!=null && image.Length>0)
+        if (image != null && image.Length > 0)
         {
-            var res=await _api.UploadImage(image);
-            vm.ImageUrl = res.ImageUrl.StartsWith("/")?"http://localhost:8080"+res.ImageUrl:res.ImageUrl;
+            var res = await _api.UploadImage(image);
+            vm.ImageUrl = res.ImageUrl;
+            //vm.ImageUrl = res.ImageUrl.StartsWith("/")?"http://localhost:8080"+res.ImageUrl:res.ImageUrl;
         }
         await _api.CreateHotel(new HotelUpdateRequest(0,vm.Name,vm.Address,vm.City,vm.Country,vm.Stars,vm.DistanceFromCenter,vm.ImageUrl,vm.Description));
         return RedirectToAction("Index");

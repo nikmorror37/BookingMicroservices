@@ -1,4 +1,6 @@
 @model BookingWebApp.Models.HotelDetailsVm
+@using BookingWebApp.Extensions           
+@inject IConfiguration Config 
 @{
     ViewData["Title"] = Model.Hotel.Name;
     var checkInStr = Model.CheckIn?.ToString("yyyy-MM-dd") ?? string.Empty;
@@ -13,10 +15,16 @@
 </div>
 @{
     var imgList = new List<string>();
-    var baseUrl = "http://localhost:8080";
+    var gateway = Config["GatewayBase"] ?? "http://localhost:8080";
+    if (!string.IsNullOrEmpty(Model.Hotel.ImageUrl))
+        imgList.Add(Model.Hotel.ImageUrl.ToGatewayUrl(gateway));         
+    else
+        imgList.Add("/img/placeholder-hotel.jpg");
+        
+    @* var baseUrl = "http://localhost:8080";
     if(!string.IsNullOrEmpty(Model.Hotel.ImageUrl))
         imgList.Add(Model.Hotel.ImageUrl.StartsWith("http") ? Model.Hotel.ImageUrl : baseUrl + Model.Hotel.ImageUrl);
-    else imgList.Add("/wwwroot/img/placeholder-hotel.jpg");
+    else imgList.Add("/wwwroot/img/placeholder-hotel.jpg"); *@
 }
 @await Html.PartialAsync("_Gallery", imgList)
 

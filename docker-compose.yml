@@ -1,4 +1,4 @@
-version: "3.9"
+# version: "3.9"
 
 services:
   sqlserver:
@@ -8,6 +8,14 @@ services:
       - SA_PASSWORD=Your_password123
     ports:
       - "1433:1433"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Your_password123 -d master -b -Q "select 1" -C || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
     networks:
       - booking-net
 
@@ -19,11 +27,12 @@ services:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
     ports:
-      - "5675:5675"   # AMQP
-      - "15675:15675" # Management UI
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
     networks:
       - booking-net
 
+# micro-services
   identityservice:
     build:
       context: .
@@ -48,6 +57,8 @@ services:
     build:
       context: .
       dockerfile: src/Services/CatalogService.API/Dockerfile
+    # volumes:
+    #   - ./catalog-images:/app/Images
     depends_on:
       sqlserver:
         condition: service_started
@@ -133,7 +144,8 @@ services:
       - ASPNETCORE_URLS=http://+:80
     networks:
       - booking-net
-
+    
+  # API Gateway + UI
   apigateway:
     build:
       context: .
@@ -157,9 +169,11 @@ services:
       - ReverseProxy__Clusters__paymentCluster__Destinations__payment1__Address=http://paymentservice/
       - ReverseProxy__Clusters__identityCluster__Destinations__identity1__Address=http://identityservice/
       - ReverseProxy__Routes__images__ClusterId=catalogCluster
-      - ReverseProxy__Routes__images__Match__Path=/api/images/{**catch-all}
+      - ReverseProxy__Routes__images__Match__Path=/api/images
+      - ReverseProxy__Routes__images__Match__Methods__0=POST
       - ReverseProxy__Routes__static__ClusterId=catalogCluster
       - ReverseProxy__Routes__static__Match__Path=/images/{**catch-all}
+      #- ReverseProxy__Routes__static__Transforms__0__PathPattern=/images/{**catch-all}
       - Jwt__Key=32plusloooooooongkey_min32symbols
       - Jwt__Issuer=IdentityService.API
       - Jwt__Audience=BookingService.API
@@ -178,7 +192,8 @@ services:
         condition: service_started
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - GatewayBase=http://apigateway
+      - ApiSettings__GatewayAddress=http://apigateway
+      - GatewayBase=http://localhost:8080
       - ASPNETCORE_URLS=http://+:80
     ports:
       - "8081:80"

@@ -1,9 +1,15 @@
 @model BookingWebApp.Services.RoomDto
+@using BookingWebApp.Extensions
+@inject IConfiguration Config
 @{
     var checkIn = ViewBag.CheckIn as string;
     var checkOut = ViewBag.CheckOut as string;
     var hotelId = ViewBag.HotelId;
-    var imgSrc = string.IsNullOrEmpty(Model.RoomImageUrl) ? "https://placehold.co/600x400?text=Room" : (Model.RoomImageUrl.StartsWith("http") ? Model.RoomImageUrl : "http://localhost:8080" + Model.RoomImageUrl);
+    var gateway = Config["GatewayBase"] ?? "http://localhost:8080";
+    var imgSrc  = string.IsNullOrEmpty(Model.RoomImageUrl)
+                  ? "https://placehold.co/600x400?text=Room"
+                  : Model.RoomImageUrl.ToGatewayUrl(gateway);
+    //var imgSrc = string.IsNullOrEmpty(Model.RoomImageUrl) ? "https://placehold.co/600x400?text=Room" : (Model.RoomImageUrl.StartsWith("http") ? Model.RoomImageUrl : "http://localhost:8080" + Model.RoomImageUrl);
 }
 <div class="card h-100">
   <img src="@imgSrc" class="card-img-top" style="height:320px;object-fit:cover;" alt="Room image">

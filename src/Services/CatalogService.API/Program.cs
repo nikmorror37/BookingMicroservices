@@ -68,9 +68,15 @@ if (!Directory.Exists(imagesPath))
 }
 
 app.UseStaticFiles(); // Default wwwroot
+// app.UseStaticFiles(new StaticFileOptions
+// {
+//     FileProvider = new PhysicalFileProvider(imagesPath),
+//     RequestPath = "/images"
+// });
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(imagesPath),
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "Images")),
     RequestPath = "/images"
 });
 
@@ -89,24 +95,44 @@ using (var scope = app.Services.CreateScope())
     {
         db.Hotels.AddRange(
             new CatalogService.API.Domain.Models.Hotel {
-                Name = "Hilton Midtown",
-                Address = "1335 6th Ave",
-                City = "New York",
-                Country = "USA",
-                Stars = 5,
-                DistanceFromCenter = 0.9,
-                ImageUrl = "/images/hilton-midtown.jpg",
-                Description = "Experience luxury in the heart of Manhattan at the Hilton Midtown. Featuring spacious rooms with stunning city views, our hotel offers premium amenities including a rooftop pool, gourmet dining options, and a state-of-the-art fitness center. Minutes away from Central Park, Broadway theaters, and Fifth Avenue shopping."
+                Name = "Hilton",
+                Address = "Grzybowska 63, 00-844",
+                City = "Warsaw",
+                Country = "Poland",
+                Stars = 4,
+                DistanceFromCenter = 1.1,
+                ImageUrl = "/images/hilton_warsaw.jpg",
+                Description = "Hilton Warsaw City Hotel offers 4-star accommodation located in Warsaw's busy financial district within walking distance of shops, museums and a lively dining and entertainment scene. The historic Old Town is a 30-minute walk from the hotel and Warsaw Frederic Chopin Airport is a 20-minute drive away."
             },
             new CatalogService.API.Domain.Models.Hotel {
-                Name = "Ibis Centre",
-                Address = "7 Rue de Temple",
-                City = "Paris",
-                Country = "France",
+                Name = "Raffles Europejski",
+                Address = "Krakowskie Przedmiescie 13, 00-071",
+                City = "Warsaw",
+                Country = "Poland",
+                Stars = 5,
+                DistanceFromCenter = 1.6,
+                ImageUrl = "/images/raffles_warsaw.jpg",
+                Description = "Raffles Europejski Warsaw is a luxury hotel located in the heart of Warsaw, Poland. It is known for its elegant design, exceptional service, and rich history. The hotel features luxurious accommodations, fine dining options, a spa, and various amenities to ensure a comfortable and memorable stay for its guests."
+            },
+            new CatalogService.API.Domain.Models.Hotel {
+                Name = "Westin",
+                Address = "al. Jana Pawla II 21, 00-854",
+                City = "Warsaw",
+                Country = "Poland",
+                Stars = 5,
+                DistanceFromCenter = 0.7,
+                ImageUrl = "/images/westin_warsaw.jpg",
+                Description = "The Westin Warsaw is known for its modern design, upscale amenities, and convenient location. The hotel offers comfortable accommodations, a fitness center, a spa, and various dining options. It is a popular choice for both business and leisure travelers visiting the city."
+            },
+            new CatalogService.API.Domain.Models.Hotel {
+                Name = "ibis Styles Centrum",
+                Address = "Zagorna 1A, 00-441",
+                City = "Warsaw",
+                Country = "Poland",
                 Stars = 3,
-                DistanceFromCenter = 1.2,
-                ImageUrl = "/images/ibis-paris.jpg",
-                Description = "Enjoy comfortable and affordable accommodations at Ibis Centre Paris. Our cozy rooms provide all essential amenities for a pleasant stay in the City of Light. Conveniently located just a short walk from major attractions like Notre Dame Cathedral and the Louvre Museum. Continental breakfast available daily."
+                DistanceFromCenter = 1.9,
+                ImageUrl = "/images/ibis_styles_centrum_warsaw.jpg",
+                Description = "ibis Styles Centrum Warsaw is a budget-friendly hotel. It is known for its modern design, comfortable accommodations, and convenient amenities. The hotel offers a range of services, including free Wi-Fi."
             }
         );
         db.SaveChanges();
