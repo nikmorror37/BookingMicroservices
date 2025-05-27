@@ -85,7 +85,10 @@
       <div class="invalid-feedback">CVV must be exactly 3 digits.</div>
     </div>
   </div>
-  <button class="btn btn-success mt-3">Pay</button>
+  @* <button class="btn btn-success mt-3">Pay</button> *@
+  <button type="submit" class="btn btn-success mt-3">
+    <i class="bi bi-credit-card me-2"></i>Pay $@total.ToString("0.00")
+  </button>
   <a asp-action="Details" asp-route-id="@Model.Booking.Id" class="btn btn-outline-secondary mt-3">Cancel</a>
   <style>
     .payment-option img{pointer-events:none;}
@@ -135,6 +138,19 @@
             event.preventDefault();
             event.stopPropagation();
           }
+          else {
+            // if valid - show animation
+            const btn = form.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing payment...';
+            
+            setTimeout(() => {
+                if (btn.disabled) {
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying with bank...';
+                }
+            }, 1000);
+          }
+
           form.classList.add('was-validated');
           if(!expValid){
               const fb = form.querySelector('[name="expMonth"]').parentElement.nextElementSibling;
