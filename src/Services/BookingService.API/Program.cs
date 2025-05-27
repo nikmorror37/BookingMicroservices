@@ -15,21 +15,56 @@ using BookingService.API.Infrastructure.Handlers;
 var builder = WebApplication.CreateBuilder(args);
 
 // EF
+var connectionString = builder.Configuration.GetConnectionString("BookingDb") 
+    ?? throw new InvalidOperationException("Connection string 'BookingDb' not found.");
+
 builder.Services.AddDbContext<BookingDbContext>(opts =>
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("BookingDb"))
+    opts.UseSqlServer(connectionString)
 );
+
+// Add HealthChecks
+
+var roomServiceUrl = builder.Configuration["Services:RoomService"] 
+    ?? throw new InvalidOperationException("RoomService URL not configured");
+var catalogServiceUrl = builder.Configuration["Services:CatalogService"] 
+    ?? throw new InvalidOperationException("CatalogService URL not configured");
+var paymentServiceUrl = builder.Configuration["Services:PaymentService"] 
+    ?? throw new InvalidOperationException("PaymentService URL not configured");
+
+builder.Services.AddHealthChecks()
+    .AddSqlServer(
+        connectionString, 
+        name: "booking-db",
+        tags: ["db", "sql", "ready"])
+    .AddRabbitMQ(
+        $"amqp://guest:guest@{builder.Configuration["EventBus:Host"] ?? "rabbitmq"}:5672",
+        name: "rabbitmq",
+        tags: ["messaging", "rabbitmq"])
+    .AddUrlGroup(
+        new Uri($"{roomServiceUrl}/health"),
+        name: "room-service",
+        tags: ["dependency"])
+    .AddUrlGroup(
+        new Uri($"{catalogServiceUrl}/health"),
+        name: "catalog-service", 
+        tags: ["dependency"])
+    .AddUrlGroup(
+        new Uri($"{paymentServiceUrl}/health"),
+        name: "payment-service",
+        tags: ["dependency"]);
+
 
 // HttpClient for RoomService
 builder.Services.AddHttpClient<IRoomServiceClient, RoomServiceClient>(client =>
 {
-    var roomServiceUrl = builder.Configuration["Services:RoomService"] ?? throw new InvalidOperationException("RoomService URL not configured");
+    //var roomServiceUrl = builder.Configuration["Services:RoomService"] ?? throw new InvalidOperationException("RoomService URL not configured");
     client.BaseAddress = new Uri(roomServiceUrl);
 });
 
 // HttpClient for CatalogService
 builder.Services.AddHttpClient<IHotelServiceClient, HotelServiceClient>(client =>
 {
-    var catalogServiceUrl = builder.Configuration["Services:CatalogService"] ?? throw new InvalidOperationException("CatalogService URL not configured");
+    //var catalogServiceUrl = builder.Configuration["Services:CatalogService"] ?? throw new InvalidOperationException("CatalogService URL not configured");
     client.BaseAddress = new Uri(catalogServiceUrl);
 });
 
@@ -40,7 +75,7 @@ builder.Services.AddTransient<BearerTokenHandler>();
 // HttpClient for PaymentService (with Bearer token propagation)
 builder.Services.AddHttpClient<IPaymentServiceClient, PaymentServiceClient>(client =>
 {
-    var paymentServiceUrl = builder.Configuration["Services:PaymentService"] ?? throw new InvalidOperationException("PaymentService URL not configured");
+    //var paymentServiceUrl = builder.Configuration["Services:PaymentService"] ?? throw new InvalidOperationException("PaymentService URL not configured");
     client.BaseAddress = new Uri(paymentServiceUrl);
 })
 .AddHttpMessageHandler<BearerTokenHandler>();
@@ -168,6 +203,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Health checks endpoint
+app.MapHealthChecks("/health");
 
 // Apply EF Core migrations automatically
 using (var scope = app.Services.CreateScope())

@@ -14,9 +14,23 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 // EF
+var connectionString = builder.Configuration.GetConnectionString("PaymentDb")
+    ?? throw new InvalidOperationException("Connection string 'PaymentDb' not found.");
+
 builder.Services.AddDbContext<PaymentDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("PaymentDb"))
+    opt.UseSqlServer(connectionString)
 );
+
+// Add HealthChecks
+builder.Services.AddHealthChecks()
+    .AddSqlServer(
+        connectionString, 
+        name: "payment-db",
+        tags: ["db", "sql", "ready"])
+    .AddRabbitMQ(
+        $"amqp://guest:guest@{builder.Configuration["EventBus:Host"] ?? "rabbitmq"}:5672",
+        name: "rabbitmq",
+        tags: ["messaging", "rabbitmq"]);
 
 //Register client to bank gateway
 builder.Services.AddScoped<IPaymentGatewayClient, PaymentGatewayClient>();
@@ -124,11 +138,14 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Health checks endpoint
+app.MapHealthChecks("/health");
+
 // Apply EF Core migrations automatically
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
-    db.Database.Migrate();
+  var db = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
+  db.Database.Migrate();
 }
 
 app.Run();

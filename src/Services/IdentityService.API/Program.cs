@@ -11,9 +11,19 @@ using System.IdentityModel.Tokens.Jwt;
 var builder = WebApplication.CreateBuilder(args);
 
 // EF + Identity
+var connectionString = builder.Configuration.GetConnectionString("IdentityDb")
+    ?? throw new InvalidOperationException("Connection string 'IdentityDb' not found.");
+
 builder.Services.AddDbContext<IdentityDbContext>(opts =>
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("IdentityDb")));
-	
+    opts.UseSqlServer(connectionString));
+
+// Add HealthChecks
+builder.Services.AddHealthChecks()
+    .AddSqlServer(
+        connectionString, 
+        name: "identity-db",
+        tags: ["db", "sql", "ready"]);
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
         options.Password.RequireNonAlphanumeric = false;
         options.Password.RequireUppercase = false;
@@ -89,12 +99,15 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// Health checks endpoint
+app.MapHealthChecks("/health");
+
 // Seed default roles (Admin, User) and an initial admin user from config
 using (var scope = app.Services.CreateScope())
 {
     // Apply migrations
     scope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.Migrate();
-    
+
     var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<IdentityService.API.Domain.Models.ApplicationUser>>();
 
@@ -109,7 +122,7 @@ using (var scope = app.Services.CreateScope())
 
     // create admin user if not exists
     var adminEmail = builder.Configuration["Admin:Email"];
-    var adminPass  = builder.Configuration["Admin:Password"];
+    var adminPass = builder.Configuration["Admin:Password"];
     if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPass))
     {
         var admin = await userMgr.FindByEmailAsync(adminEmail);

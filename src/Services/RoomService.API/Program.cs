@@ -5,10 +5,16 @@ using RoomService.API.Consumers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("RoomDb");
+var connectionString = builder.Configuration.GetConnectionString("RoomDb")
+    ?? throw new InvalidOperationException("Connection string 'RoomDb' not found.");
 
 builder.Services.AddDbContext<RoomDbContext>(opts =>
     opts.UseSqlServer(connectionString));
+
+// add HealthChecks
+builder.Services.AddHealthChecks()
+    .AddSqlServer(connectionString)
+    .AddRabbitMQ(rabbitConnectionString: "amqp://guest:guest@rabbitmq:5672");
 
 builder.Services.AddControllers();
 
@@ -95,6 +101,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// health checks endpoint
+app.MapHealthChecks("/health");
+
 // Apply EF Core migrations automatically
 using (var scope = app.Services.CreateScope())
 {
@@ -102,11 +111,12 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 
     // Seed default rooms
-    if(!db.Rooms.Any())
+    if (!db.Rooms.Any())
     {
         db.Rooms.AddRange(
             // Hilton Warsaw (hotelId 1)
-            new RoomService.API.Domain.Models.Room {
+            new RoomService.API.Domain.Models.Room
+            {
                 HotelId = 1,
                 Number = "101",
                 Type = RoomService.API.Domain.Models.RoomType.Single,
@@ -116,7 +126,8 @@ using (var scope = app.Services.CreateScope())
                 NumberOfBeds = 1,
                 Capacity = 1
             },
-            new RoomService.API.Domain.Models.Room {
+            new RoomService.API.Domain.Models.Room
+            {
                 HotelId = 1,
                 Number = "102",
                 Type = RoomService.API.Domain.Models.RoomType.Double,
@@ -126,7 +137,8 @@ using (var scope = app.Services.CreateScope())
                 NumberOfBeds = 1,
                 Capacity = 2
             },
-            new RoomService.API.Domain.Models.Room {
+            new RoomService.API.Domain.Models.Room
+            {
                 HotelId = 1,
                 Number = "103",
                 Type = RoomService.API.Domain.Models.RoomType.Suite,
@@ -136,33 +148,36 @@ using (var scope = app.Services.CreateScope())
                 NumberOfBeds = 2,
                 Capacity = 4
             },
-            // Ibis Centre (hotelId 2)
-            new RoomService.API.Domain.Models.Room {
+            // Raffles Warsaw (hotelId 2)
+            new RoomService.API.Domain.Models.Room
+            {
                 HotelId = 2,
                 Number = "201",
                 Type = RoomService.API.Domain.Models.RoomType.Single,
-                Price = 90m,
-                Description = "Budget single room",
+                Price = 190m,
+                Description = "Luxure single room",
                 IsAvailable = true,
                 NumberOfBeds = 1,
                 Capacity = 1
             },
-            new RoomService.API.Domain.Models.Room {
+            new RoomService.API.Domain.Models.Room
+            {
                 HotelId = 2,
                 Number = "202",
                 Type = RoomService.API.Domain.Models.RoomType.Double,
-                Price = 120m,
-                Description = "Standard double room",
+                Price = 220m,
+                Description = "Luxure double room",
                 IsAvailable = true,
                 NumberOfBeds = 1,
                 Capacity = 2
             },
-            new RoomService.API.Domain.Models.Room {
+            new RoomService.API.Domain.Models.Room
+            {
                 HotelId = 2,
                 Number = "203",
                 Type = RoomService.API.Domain.Models.RoomType.Twin,
-                Price = 130m,
-                Description = "Twin room",
+                Price = 230m,
+                Description = "Luxure twin room",
                 IsAvailable = true,
                 NumberOfBeds = 2,
                 Capacity = 2

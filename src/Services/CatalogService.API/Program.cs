@@ -3,9 +3,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
+var connectionString = builder.Configuration.GetConnectionString("CatalogDb") 
+    ?? throw new InvalidOperationException("Connection string 'CatalogDb' not found.");
 
 builder.Services.AddDbContext<CatalogDbContext>(opts =>
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("CatalogDb")));
+    opts.UseSqlServer(connectionString));
+// builder.Services.AddDbContext<CatalogDbContext>(opts =>
+//     opts.UseSqlServer(builder.Configuration.GetConnectionString("CatalogDb")));
+
+// HealthChecks
+builder.Services.AddHealthChecks()
+    .AddSqlServer(connectionString);
+
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -67,16 +76,10 @@ if (!Directory.Exists(imagesPath))
     Directory.CreateDirectory(imagesPath);
 }
 
-app.UseStaticFiles(); // Default wwwroot
-// app.UseStaticFiles(new StaticFileOptions
-// {
-//     FileProvider = new PhysicalFileProvider(imagesPath),
-//     RequestPath = "/images"
-// });
+//app.UseStaticFiles(); // Default wwwroot
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(Directory.GetCurrentDirectory(), "Images")),
+    FileProvider = new PhysicalFileProvider(imagesPath),
     RequestPath = "/images"
 });
 
@@ -84,17 +87,21 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// endpoint for health checks
+app.MapHealthChecks("/health");
+
 // Apply EF Core migrations automatically
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
     db.Database.Migrate();
 
-    // Seed default hotels
-    if(!db.Hotels.Any())
+    // Seed some hotels for Warsaw
+    if (!db.Hotels.Any())
     {
         db.Hotels.AddRange(
-            new CatalogService.API.Domain.Models.Hotel {
+            new CatalogService.API.Domain.Models.Hotel
+            {
                 Name = "Hilton",
                 Address = "Grzybowska 63, 00-844",
                 City = "Warsaw",
@@ -104,7 +111,8 @@ using (var scope = app.Services.CreateScope())
                 ImageUrl = "/images/hilton_warsaw.jpg",
                 Description = "Hilton Warsaw City Hotel offers 4-star accommodation located in Warsaw's busy financial district within walking distance of shops, museums and a lively dining and entertainment scene. The historic Old Town is a 30-minute walk from the hotel and Warsaw Frederic Chopin Airport is a 20-minute drive away."
             },
-            new CatalogService.API.Domain.Models.Hotel {
+            new CatalogService.API.Domain.Models.Hotel
+            {
                 Name = "Raffles Europejski",
                 Address = "Krakowskie Przedmiescie 13, 00-071",
                 City = "Warsaw",
@@ -114,7 +122,8 @@ using (var scope = app.Services.CreateScope())
                 ImageUrl = "/images/raffles_warsaw.jpg",
                 Description = "Raffles Europejski Warsaw is a luxury hotel located in the heart of Warsaw, Poland. It is known for its elegant design, exceptional service, and rich history. The hotel features luxurious accommodations, fine dining options, a spa, and various amenities to ensure a comfortable and memorable stay for its guests."
             },
-            new CatalogService.API.Domain.Models.Hotel {
+            new CatalogService.API.Domain.Models.Hotel
+            {
                 Name = "Westin",
                 Address = "al. Jana Pawla II 21, 00-854",
                 City = "Warsaw",
@@ -124,7 +133,8 @@ using (var scope = app.Services.CreateScope())
                 ImageUrl = "/images/westin_warsaw.jpg",
                 Description = "The Westin Warsaw is known for its modern design, upscale amenities, and convenient location. The hotel offers comfortable accommodations, a fitness center, a spa, and various dining options. It is a popular choice for both business and leisure travelers visiting the city."
             },
-            new CatalogService.API.Domain.Models.Hotel {
+            new CatalogService.API.Domain.Models.Hotel
+            {
                 Name = "ibis Styles Centrum",
                 Address = "Zagorna 1A, 00-441",
                 City = "Warsaw",

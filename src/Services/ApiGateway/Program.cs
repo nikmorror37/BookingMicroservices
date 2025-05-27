@@ -61,7 +61,25 @@ builder.Services.AddCors(options =>
         .AllowAnyHeader());
 });
 
-builder.Services.AddHealthChecks();
+//builder.Services.AddHealthChecks();
+
+// Enhanced HealthChecks to check all services
+builder.Services.AddHealthChecks()
+    .AddUrlGroup(new Uri("http://catalogservice/health"), 
+        name: "catalog-service", 
+        tags: new[] { "service", "catalog" })
+    .AddUrlGroup(new Uri("http://roomservice/health"), 
+        name: "room-service", 
+        tags: new[] { "service", "room" })
+    .AddUrlGroup(new Uri("http://bookingservice/health"), 
+        name: "booking-service", 
+        tags: new[] { "service", "booking" })
+    .AddUrlGroup(new Uri("http://paymentservice/health"), 
+        name: "payment-service", 
+        tags: new[] { "service", "payment" })
+    .AddUrlGroup(new Uri("http://identityservice/health"), 
+        name: "identity-service", 
+        tags: new[] { "service", "identity" });
 
 var app = builder.Build();
 
@@ -103,7 +121,29 @@ app.MapReverseProxy(proxyPipeline =>
     });
 });
 
-// before app.Run(), map health checks
-app.MapHealthChecks("/health");
+// health checks
+//app.MapHealthChecks("/health");
+
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            totalDuration = report.TotalDuration,
+            checks = report.Entries.Select(x => new
+            {
+                name = x.Key,
+                status = x.Value.Status.ToString(),
+                duration = x.Value.Duration,
+                description = x.Value.Description,
+                exception = x.Value.Exception?.Message
+            })
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
 
 app.Run();
