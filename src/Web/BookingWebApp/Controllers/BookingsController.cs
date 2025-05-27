@@ -112,12 +112,17 @@ public class BookingsController : Controller
         try
         {
             await _api.PayBooking(id);
+            return RedirectToAction("Confirmed", new { id });
         }
-        catch(ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            return RedirectToAction("Login","Account");
+            return RedirectToAction("Login", "Account");
         }
-        return RedirectToAction("Confirmed", new { id });
+        catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            TempData["Error"] = "Payment processing failed. Please check your payment details and try again.";
+            return RedirectToAction("Checkout", new { id });
+        }
     }
 
     // GET /Bookings/Confirmed/{id}
@@ -146,12 +151,12 @@ public class BookingsController : Controller
     public async Task<IActionResult> Checkout(int id)
     {
         var booking = await _api.GetBookingById(id);
-        // Оплачивать можно, только если бронь ещё ожидает оплаты
+        // can only pay if the booking is still pending
         if(booking.Status!= (int)BookingStatus.Pending && booking.Status != (int)BookingStatus.RefundError)
             return RedirectToAction("Details", new { id });
 
         var nights = Math.Max(1, (booking.CheckOut - booking.CheckIn).Days);
-        // Цена теперь уже есть в booking.Room.Price (Room объект приходит с backend)
+        // price is now in booking.Room.Price (Room object comes with backend)
         var amount = booking.Room?.Price * nights ?? 0;
 
         var vm = new PaymentVm(booking, amount);

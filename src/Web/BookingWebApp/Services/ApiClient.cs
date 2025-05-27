@@ -20,6 +20,7 @@ public class ApiClient:IApiClient
     public ApiClient(HttpClient client, IHttpContextAccessor httpContextAccessor)
     {
         _client = client;
+        _client.Timeout = TimeSpan.FromSeconds(30); // because default HttpClient waits for 100 seconds
         _httpContextAccessor = httpContextAccessor;
     }
 

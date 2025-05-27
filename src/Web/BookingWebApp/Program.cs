@@ -41,7 +41,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             NameClaimType = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub,
             RoleClaimType = System.Security.Claims.ClaimTypes.Role
         };
-        // извлекаем токен из session при каждом запросе
+        // extract token from session at every request
         options.Events = new JwtBearerEvents {
             OnMessageReceived = ctx => {
                 var httpCtx = ctx.HttpContext;

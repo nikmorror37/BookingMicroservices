@@ -3,10 +3,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# копируем csproj и nuget.restore
+# copy csproj and nuget.restore
 COPY src/Web/BookingWebApp/BookingWebApp.csproj ./Web/BookingWebApp/
 COPY src/Contracts/BookingMicro.Contracts.csproj ./Contracts/
-# сервисные csproj нужны для корректного Restore зависимости проекта фронта (ProjectReference)
+# service csproj is needed for correct Restore project front dependency (ProjectReference)
 COPY src/Services/BookingService.API/BookingService.API.csproj ./Services/BookingService.API/
 COPY src/Services/CatalogService.API/CatalogService.API.csproj ./Services/CatalogService.API/
 COPY src/Services/RoomService.API/RoomService.API.csproj ./Services/RoomService.API/

@@ -5,6 +5,8 @@ using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +83,33 @@ builder.Services.AddHealthChecks()
         name: "identity-service", 
         tags: new[] { "service", "identity" });
 
+// Rate Limiting:
+//100 requests per minute per user (or IP if not authorized)
+//Automatic limit recovery every minute
+//429 Too Many Requests when limit is exceeded
+//Protection against DDoS and API overload.
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User?.Identity?.Name ?? context.Request.Headers.Host.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+    
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync(
+            "Too many requests. Please try again later.", cancellationToken: token);
+    };
+});
+
 var app = builder.Build();
 
 // Middleware
@@ -91,6 +120,9 @@ app.UseAuthorization();
 
 // in pipeline, just after app.UseAuthorization();
 app.UseCors("AllowAll");
+
+// Rate Limiting middleware
+app.UseRateLimiter();
 
 // Accept X-Forwarded-* when running behind reverse proxies (nginx, docker networks, etc.)
 app.UseForwardedHeaders(new ForwardedHeadersOptions

@@ -59,7 +59,7 @@ public record BookingDto(int Id,
                           RoomDto Room,
                           HotelDto Hotel)
 {
-    // Удобные аксессоры, чтобы старый код не падал, пока мы постепенно мигрируем шаблоны/контроллеры
+    // Convenient accessories to keep the old code from falling out while gradually migrate templates/controllers
     public int RoomId  => Room?.Id  ?? 0;
     public int HotelId => Hotel?.Id ?? 0;
 }

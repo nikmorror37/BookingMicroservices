@@ -7,6 +7,16 @@
     var sort = ViewBag.CurrentSort as string;
     ViewBag.NoSticky = true;
 }
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 @await Html.PartialAsync("_SearchFilters")
 <h2 class="mb-3">Hotel Catalog</h2>
 <div class="row row-cols-1 row-cols-md-2 gy-4">
