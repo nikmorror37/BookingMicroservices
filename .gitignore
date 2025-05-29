@@ -398,3 +398,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Uploaded images folder (created by admin upload)
+catalog-images/

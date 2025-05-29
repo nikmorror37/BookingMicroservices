@@ -16,15 +16,27 @@
 @{
     var imgList = new List<string>();
     var gateway = Config["GatewayBase"] ?? "http://localhost:8080";
-    if (!string.IsNullOrEmpty(Model.Hotel.ImageUrl))
+
+    if (Model.AdditionalImages?.Any() == true)
+    {
+        foreach (var img in Model.AdditionalImages)
+        {
+            // if the URL is relative, add gateway
+            if (img.StartsWith("/"))
+            {
+                imgList.Add(gateway + img);
+            }
+            else
+            {
+                imgList.Add(img.ToGatewayUrl(gateway));
+            }
+        }
+    }
+
+    else if (!string.IsNullOrEmpty(Model.Hotel.ImageUrl))
         imgList.Add(Model.Hotel.ImageUrl.ToGatewayUrl(gateway));         
     else
         imgList.Add("/img/placeholder-hotel.jpg");
-        
-    @* var baseUrl = "http://localhost:8080";
-    if(!string.IsNullOrEmpty(Model.Hotel.ImageUrl))
-        imgList.Add(Model.Hotel.ImageUrl.StartsWith("http") ? Model.Hotel.ImageUrl : baseUrl + Model.Hotel.ImageUrl);
-    else imgList.Add("/wwwroot/img/placeholder-hotel.jpg"); *@
 }
 @await Html.PartialAsync("_Gallery", imgList)
 

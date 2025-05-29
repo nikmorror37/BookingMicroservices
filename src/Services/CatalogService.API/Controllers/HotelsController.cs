@@ -28,11 +28,11 @@ namespace CatalogService.API.Controllers
         /// - page, pageSize (pagination)
         [HttpGet("", Name = "GetHotels")]
         public async Task<ActionResult<IEnumerable<Hotel>>> Get(
-            [FromQuery] string? search       = null,
-            [FromQuery] int?    minStars     = null,
+            [FromQuery] string? search = null,
+            [FromQuery] int? minStars = null,
             [FromQuery] string? maxDistance = null,
-            [FromQuery] int     page         = 1,
-            [FromQuery] int     pageSize     = 20)
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
             // Parameter validation
             if (minStars is < 1 or > 5)
@@ -174,6 +174,69 @@ namespace CatalogService.API.Controllers
             _context.Hotels.Remove(hotel);
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+        
+        [HttpGet("{id}/images")]
+        public async Task<ActionResult<List<string>>> GetHotelImages(int id)
+        {
+            var hotel = await _context.Hotels.FindAsync(id);
+            if (hotel == null)
+                return NotFound();
+            
+            var images = new List<string>();
+
+            // first add the main image of the hotel
+            if (!string.IsNullOrEmpty(hotel.ImageUrl))
+            {
+                images.Add(hotel.ImageUrl);
+            }
+            
+            // Mapping hotel IDs to folder names in the /Images/.. 
+            var hotelFolderMap = new Dictionary<int, string>
+            {
+                { 1, "HiltonWarsaw" },
+                { 2, "RafflesWarsaw" },
+                { 3, "WestinWarsaw" },
+                { 4, "IbisStylesCentrumWarsaw" },
+                { 5, "MercureGrandWarsaw" }
+            };
+            
+            if (!hotelFolderMap.TryGetValue(id, out var folderName))
+            {
+                //If there is no mapping, try to find a folder by the name of the hotel
+                folderName = hotel.Name.Replace(" ", "").Replace("Styles", "").Replace("Centrum", "").Replace("City", "");
+            }
+
+            //Path to specific hotel folder 
+            var hotelImagesPath = Path.Combine(Directory.GetCurrentDirectory(), "Images", folderName);
+            
+            if (Directory.Exists(hotelImagesPath))
+            {
+                // get all pictures of the hotel (except photos of rooms)
+                var hotelImages = Directory.GetFiles(hotelImagesPath, "*.jpg")
+                    .Where(f => {
+                        var fileName = Path.GetFileName(f).ToLower();
+                        var fullPath = $"/images/{folderName}/{Path.GetFileName(f)}";
+                        
+                        // сheck if it's a room image
+                        bool isRoomImage = fileName.Contains("double_") || 
+                                          fileName.Contains("single_") || 
+                                          fileName.Contains("suite_") || 
+                                          fileName.Contains("twin_");
+                
+                        // сheck if it's the main image (case-insensitive comparison)
+                        bool isMainImage = !string.IsNullOrEmpty(hotel.ImageUrl) && 
+                                          fullPath.Equals(hotel.ImageUrl, StringComparison.OrdinalIgnoreCase);
+                
+                        return !isRoomImage && !isMainImage;
+                    })
+                    .OrderBy(f => f)
+                    .Select(f => $"/images/{folderName}/{Path.GetFileName(f)}")
+                    .ToList();
+                
+                images.AddRange(hotelImages);
+            }
+            return Ok(images);
         }
     }
 }

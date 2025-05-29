@@ -120,7 +120,7 @@ using (var scope = app.Services.CreateScope())
                 HotelId = 1,
                 Number = "101",
                 Type = RoomService.API.Domain.Models.RoomType.Single,
-                Price = 150m,
+                Price = 120m,
                 Description = "Standard single room",
                 IsAvailable = true,
                 NumberOfBeds = 1,
@@ -129,10 +129,10 @@ using (var scope = app.Services.CreateScope())
             new RoomService.API.Domain.Models.Room
             {
                 HotelId = 1,
-                Number = "102",
+                Number = "112",
                 Type = RoomService.API.Domain.Models.RoomType.Double,
                 Price = 180m,
-                Description = "Comfort double room",
+                Description = "Comfortable double room",
                 IsAvailable = true,
                 NumberOfBeds = 1,
                 Capacity = 2
@@ -140,7 +140,18 @@ using (var scope = app.Services.CreateScope())
             new RoomService.API.Domain.Models.Room
             {
                 HotelId = 1,
-                Number = "103",
+                Number = "123",
+                Type = RoomService.API.Domain.Models.RoomType.Twin,
+                Price = 180m,
+                Description = "Pretty twin room",
+                IsAvailable = true,
+                NumberOfBeds = 2,
+                Capacity = 2
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 1,
+                Number = "134",
                 Type = RoomService.API.Domain.Models.RoomType.Suite,
                 Price = 300m,
                 Description = "Luxury suite",
@@ -153,19 +164,8 @@ using (var scope = app.Services.CreateScope())
             {
                 HotelId = 2,
                 Number = "201",
-                Type = RoomService.API.Domain.Models.RoomType.Single,
-                Price = 190m,
-                Description = "Luxure single room",
-                IsAvailable = true,
-                NumberOfBeds = 1,
-                Capacity = 1
-            },
-            new RoomService.API.Domain.Models.Room
-            {
-                HotelId = 2,
-                Number = "202",
                 Type = RoomService.API.Domain.Models.RoomType.Double,
-                Price = 220m,
+                Price = 250m,
                 Description = "Luxure double room",
                 IsAvailable = true,
                 NumberOfBeds = 1,
@@ -174,13 +174,159 @@ using (var scope = app.Services.CreateScope())
             new RoomService.API.Domain.Models.Room
             {
                 HotelId = 2,
-                Number = "203",
+                Number = "202",
                 Type = RoomService.API.Domain.Models.RoomType.Twin,
-                Price = 230m,
+                Price = 270m,
                 Description = "Luxure twin room",
                 IsAvailable = true,
                 NumberOfBeds = 2,
                 Capacity = 2
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 2,
+                Number = "203",
+                Type = RoomService.API.Domain.Models.RoomType.Suite,
+                Price = 530m,
+                Description = "Luxure suite room",
+                IsAvailable = true,
+                NumberOfBeds = 2,
+                Capacity = 3
+            },
+            // Westin Warsaw (hotelId 3)
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 3,
+                Number = "301",
+                Type = RoomService.API.Domain.Models.RoomType.Single,
+                Price = 150m,
+                Description = "Standard single room",
+                IsAvailable = true,
+                NumberOfBeds = 1,
+                Capacity = 1
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 3,
+                Number = "302",
+                Type = RoomService.API.Domain.Models.RoomType.Double,
+                Price = 220m,
+                Description = "Comfortable double room",
+                IsAvailable = true,
+                NumberOfBeds = 1,
+                Capacity = 2
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 3,
+                Number = "303",
+                Type = RoomService.API.Domain.Models.RoomType.Twin,
+                Price = 220m,
+                Description = "Pretty twin room",
+                IsAvailable = true,
+                NumberOfBeds = 2,
+                Capacity = 2
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 3,
+                Number = "304",
+                Type = RoomService.API.Domain.Models.RoomType.Suite,
+                Price = 400m,
+                Description = "Luxury suite",
+                IsAvailable = true,
+                NumberOfBeds = 2,
+                Capacity = 3
+            },
+            // Ibis Styles Centrum Warsaw (hotelId 4)
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 4,
+                Number = "101",
+                Type = RoomService.API.Domain.Models.RoomType.Single,
+                Price = 90m,
+                Description = "Standard single room",
+                IsAvailable = true,
+                NumberOfBeds = 1,
+                Capacity = 1
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 4,
+                Number = "202",
+                Type = RoomService.API.Domain.Models.RoomType.Double,
+                Price = 130m,
+                Description = "Comfortable double room",
+                IsAvailable = true,
+                NumberOfBeds = 1,
+                Capacity = 2
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 4,
+                Number = "303",
+                Type = RoomService.API.Domain.Models.RoomType.Twin,
+                Price = 130m,
+                Description = "Pretty twin room",
+                IsAvailable = true,
+                NumberOfBeds = 2,
+                Capacity = 2
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 4,
+                Number = "404",
+                Type = RoomService.API.Domain.Models.RoomType.Suite,
+                Price = 200m,
+                Description = "Cool suite",
+                IsAvailable = true,
+                NumberOfBeds = 2,
+                Capacity = 3
+            },
+            // Mercure Grand Warsaw (hotelId 5)
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 5,
+                Number = "501",
+                Type = RoomService.API.Domain.Models.RoomType.Single,
+                Price = 110m,
+                Description = "Standard single room",
+                IsAvailable = true,
+                NumberOfBeds = 1,
+                Capacity = 1
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 5,
+                Number = "502",
+                Type = RoomService.API.Domain.Models.RoomType.Double,
+                Price = 170m,
+                Description = "Comfortable double room",
+                IsAvailable = true,
+                NumberOfBeds = 1,
+                Capacity = 2
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 5,
+                Number = "503",
+                Type = RoomService.API.Domain.Models.RoomType.Twin,
+                Price = 170m,
+                Description = "Pretty twin room",
+                IsAvailable = true,
+                NumberOfBeds = 2,
+                Capacity = 2
+            },
+            new RoomService.API.Domain.Models.Room
+            {
+                HotelId = 5,
+                Number = "504",
+                Type = RoomService.API.Domain.Models.RoomType.Suite,
+                Price = 320m,
+                Description = "Comfortable suite",
+                IsAvailable = true,
+                NumberOfBeds = 2,
+                Capacity = 3
             }
         );
         db.SaveChanges();

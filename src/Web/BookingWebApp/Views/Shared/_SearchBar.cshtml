@@ -16,7 +16,7 @@
         <label class="form-label">Guests</label>
         <select name="guests" class="form-select">
             @for(int g=1; g<=4; g++){
-                <option value="@g" selected="@(Context.Request.Query["guests"] == g.ToString() ? "selected" : null)">@g adult@(g>1?"s":"")</option>
+                <option value="@g" selected="@(Context.Request.Query["guests"] == g.ToString() ? "selected" : null)">@g person@(g>1?"s":"")</option>
             }
         </select>
     </div>

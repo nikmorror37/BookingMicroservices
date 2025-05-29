@@ -71,7 +71,13 @@ public class HotelsController:Controller
                 ModelState.AddModelError(string.Empty, "Please select a valid date range.");
             }
         }
-        var vm = new BookingWebApp.Models.HotelDetailsVm(hotel,rooms,checkIn,checkOut);
+        // get all images of the hotel
+        var additionalImages = await _api.GetHotelImagesAsync(id);
+
+        var vm = new BookingWebApp.Models.HotelDetailsVm(hotel, rooms, checkIn, checkOut)
+        {
+            AdditionalImages = additionalImages
+        };
         return View(vm);
     }
 } 

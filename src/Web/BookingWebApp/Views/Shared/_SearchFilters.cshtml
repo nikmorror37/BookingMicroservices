@@ -30,7 +30,7 @@
         <label class="form-label">Guests</label>
         <select name="guests" class="form-select input-pill">
           @for(int g=1;g<=4;g++){
-              <option value="@g" selected="@(guests==g.ToString()?"selected":null)">@g adult@(g>1?"s":null)</option>
+              <option value="@g" selected="@(guests==g.ToString()?"selected":null)">@g person@(g>1?"s":null)</option>
           }
         </select>
       </div>

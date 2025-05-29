@@ -171,8 +171,8 @@ services:
       - ReverseProxy__Routes__images__ClusterId=catalogCluster
       - ReverseProxy__Routes__images__Match__Path=/api/images
       - ReverseProxy__Routes__images__Match__Methods__0=POST
-      - ReverseProxy__Routes__static__ClusterId=catalogCluster
-      - ReverseProxy__Routes__static__Match__Path=/images/{**catch-all}
+      - ReverseProxy__Routes__hotel-images__ClusterId=catalogCluster
+      - ReverseProxy__Routes__hotel-images__Match__Path=/images/{**catch-all}
       #- ReverseProxy__Routes__static__Transforms__0__PathPattern=/images/{**catch-all}
       - Jwt__Key=32plusloooooooongkey_min32symbols
       - Jwt__Issuer=IdentityService.API

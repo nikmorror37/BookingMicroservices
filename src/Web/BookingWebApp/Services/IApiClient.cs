@@ -34,8 +34,9 @@ public interface IApiClient
     [Delete("/api/hotels/{id}")] Task DeleteHotel(int id);
 
     [Post("/api/rooms")] Task<RoomDto> CreateRoom([Body] RoomUpdateRequest dto);
-    [Put("/api/rooms/{id}")] Task UpdateRoom(int id,[Body] RoomUpdateRequest dto);
+    [Put("/api/rooms/{id}")] Task UpdateRoom(int id, [Body] RoomUpdateRequest dto);
     [Delete("/api/rooms/{id}")] Task DeleteRoom(int id);
+    Task<List<string>> GetHotelImagesAsync(int hotelId);
 }
 
 #region DTOs

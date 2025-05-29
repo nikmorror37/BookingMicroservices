@@ -108,7 +108,7 @@ using (var scope = app.Services.CreateScope())
                 Country = "Poland",
                 Stars = 4,
                 DistanceFromCenter = 1.1,
-                ImageUrl = "/images/hilton_warsaw.jpg",
+                ImageUrl = "/images/HiltonWarsaw/hilton_warsaw.jpg",
                 Description = "Hilton Warsaw City Hotel offers 4-star accommodation located in Warsaw's busy financial district within walking distance of shops, museums and a lively dining and entertainment scene. The historic Old Town is a 30-minute walk from the hotel and Warsaw Frederic Chopin Airport is a 20-minute drive away."
             },
             new CatalogService.API.Domain.Models.Hotel
@@ -119,7 +119,7 @@ using (var scope = app.Services.CreateScope())
                 Country = "Poland",
                 Stars = 5,
                 DistanceFromCenter = 1.6,
-                ImageUrl = "/images/raffles_warsaw.jpg",
+                ImageUrl = "/images/RafflesWarsaw/raffles_warsaw.jpg",
                 Description = "Raffles Europejski Warsaw is a luxury hotel located in the heart of Warsaw, Poland. It is known for its elegant design, exceptional service, and rich history. The hotel features luxurious accommodations, fine dining options, a spa, and various amenities to ensure a comfortable and memorable stay for its guests."
             },
             new CatalogService.API.Domain.Models.Hotel
@@ -130,7 +130,7 @@ using (var scope = app.Services.CreateScope())
                 Country = "Poland",
                 Stars = 5,
                 DistanceFromCenter = 0.7,
-                ImageUrl = "/images/westin_warsaw.jpg",
+                ImageUrl = "/images/WestinWarsaw/westin_warsaw.jpg",
                 Description = "The Westin Warsaw is known for its modern design, upscale amenities, and convenient location. The hotel offers comfortable accommodations, a fitness center, a spa, and various dining options. It is a popular choice for both business and leisure travelers visiting the city."
             },
             new CatalogService.API.Domain.Models.Hotel
@@ -141,8 +141,19 @@ using (var scope = app.Services.CreateScope())
                 Country = "Poland",
                 Stars = 3,
                 DistanceFromCenter = 1.9,
-                ImageUrl = "/images/ibis_styles_centrum_warsaw.jpg",
+                ImageUrl = "/images/IbisStylesCentrumWarsaw/ibis_styles_centrum_warsaw.jpg",
                 Description = "ibis Styles Centrum Warsaw is a budget-friendly hotel. It is known for its modern design, comfortable accommodations, and convenient amenities. The hotel offers a range of services, including free Wi-Fi."
+            },
+            new CatalogService.API.Domain.Models.Hotel
+            {
+                Name = "Mercure Grand",
+                Address = "Krucza 28, 00-522",
+                City = "Warsaw",
+                Country = "Poland",
+                Stars = 4,
+                DistanceFromCenter = 0.5,
+                ImageUrl = "/images/MercureGrandWarsaw/mercure_grand_warsaw.jpg",
+                Description = "Mercure Warszawa Grand is perfectly located in the centre of Warsaw. The hotel features modern rooms, restaurant, fitness center and conference facilities."
             }
         );
         db.SaveChanges();

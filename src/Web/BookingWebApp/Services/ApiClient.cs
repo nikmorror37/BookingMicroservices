@@ -8,7 +8,7 @@ using System.IO;
 
 namespace BookingWebApp.Services;
 
-public class ApiClient:IApiClient
+public class ApiClient : IApiClient
 {
     private readonly HttpClient _client;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -27,7 +27,7 @@ public class ApiClient:IApiClient
     private async Task SetAuthHeader()
     {
         var accessToken = await _httpContextAccessor.HttpContext!.GetTokenAsync("access_token");
-        if(!string.IsNullOrEmpty(accessToken))
+        if (!string.IsNullOrEmpty(accessToken))
         {
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         }
@@ -36,13 +36,13 @@ public class ApiClient:IApiClient
     public async Task<IList<HotelDto>> Hotels(HotelFilter filter)
     {
         await SetAuthHeader();
-        
+
         var query = new StringBuilder($"api/hotels?page={filter.Page}&pageSize={filter.PageSize}");
-        if(!string.IsNullOrEmpty(filter.Search))
+        if (!string.IsNullOrEmpty(filter.Search))
             query.Append($"&search={filter.Search}");
-        if(filter.MinStars.HasValue)
+        if (filter.MinStars.HasValue)
             query.Append($"&minStars={filter.MinStars}");
-        if(filter.MaxDistance.HasValue)
+        if (filter.MaxDistance.HasValue)
             query.Append($"&maxDistance={filter.MaxDistance}");
 
         var response = await _client.GetAsync(query.ToString());
@@ -61,7 +61,7 @@ public class ApiClient:IApiClient
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadAsStringAsync();
-        var hotel = JsonSerializer.Deserialize<HotelDto>(content, _jsonOptions) 
+        var hotel = JsonSerializer.Deserialize<HotelDto>(content, _jsonOptions)
             ?? throw new Exception($"Failed to deserialize hotel with id {id}");
 
         return hotel;
@@ -79,16 +79,16 @@ public class ApiClient:IApiClient
     public async Task<IList<RoomDto>> Rooms(RoomFilter filter)
     {
         await SetAuthHeader();
-        var query=new StringBuilder($"api/rooms?page={filter.Page}&pageSize={filter.PageSize}");
-        if(filter.HotelId.HasValue) query.Append($"&hotelId={filter.HotelId}");
-        if(filter.MinPrice.HasValue) query.Append($"&minPrice={filter.MinPrice}");
-        if(filter.MaxPrice.HasValue) query.Append($"&maxPrice={filter.MaxPrice}");
-        if(filter.Type.HasValue) query.Append($"&type={filter.Type}");
+        var query = new StringBuilder($"api/rooms?page={filter.Page}&pageSize={filter.PageSize}");
+        if (filter.HotelId.HasValue) query.Append($"&hotelId={filter.HotelId}");
+        if (filter.MinPrice.HasValue) query.Append($"&minPrice={filter.MinPrice}");
+        if (filter.MaxPrice.HasValue) query.Append($"&maxPrice={filter.MaxPrice}");
+        if (filter.Type.HasValue) query.Append($"&type={filter.Type}");
 
-        var response=await _client.GetAsync(query.ToString());
+        var response = await _client.GetAsync(query.ToString());
         response.EnsureSuccessStatusCode();
-        var content=await response.Content.ReadAsStringAsync();
-        var rooms=JsonSerializer.Deserialize<List<RoomDto>>(content,_jsonOptions)??new();
+        var content = await response.Content.ReadAsStringAsync();
+        var rooms = JsonSerializer.Deserialize<List<RoomDto>>(content, _jsonOptions) ?? new();
         return rooms;
     }
 
@@ -106,7 +106,7 @@ public class ApiClient:IApiClient
         return rooms;
     }
 
-    public async Task<IList<BookingDto>> MyBookings(int page=1,int pageSize=20)
+    public async Task<IList<BookingDto>> MyBookings(int page = 1, int pageSize = 20)
     {
         await SetAuthHeader();
         var response = await _client.GetAsync($"api/bookings?page={page}&pageSize={pageSize}");
@@ -120,57 +120,57 @@ public class ApiClient:IApiClient
 
     public async Task<LoginResponse> Login(LoginRequest req)
     {
-        var response=await _client.PostAsync("api/account/login", new StringContent(JsonSerializer.Serialize(req),Encoding.UTF8,"application/json"));
+        var response = await _client.PostAsync("api/account/login", new StringContent(JsonSerializer.Serialize(req), Encoding.UTF8, "application/json"));
         response.EnsureSuccessStatusCode();
-        var content=await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<LoginResponse>(content,_jsonOptions) ?? throw new Exception("Invalid login response");
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<LoginResponse>(content, _jsonOptions) ?? throw new Exception("Invalid login response");
     }
 
     public async Task Register(RegisterRequest req)
     {
-        var response=await _client.PostAsync("api/account/register", new StringContent(JsonSerializer.Serialize(req),Encoding.UTF8,"application/json"));
+        var response = await _client.PostAsync("api/account/register", new StringContent(JsonSerializer.Serialize(req), Encoding.UTF8, "application/json"));
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<UserDto> Me()
     {
         await SetAuthHeader();
-        var response=await _client.GetAsync("api/account/me");
+        var response = await _client.GetAsync("api/account/me");
         response.EnsureSuccessStatusCode();
-        var content=await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<UserDto>(content,_jsonOptions)??throw new Exception("Failed to deserialize user");
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<UserDto>(content, _jsonOptions) ?? throw new Exception("Failed to deserialize user");
     }
 
     public async Task<BookingDto> CreateBooking(NewBookingDto dto)
     {
         await SetAuthHeader();
-        var response=await _client.PostAsync("api/bookings", new StringContent(JsonSerializer.Serialize(dto),Encoding.UTF8,"application/json"));
+        var response = await _client.PostAsync("api/bookings", new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json"));
         response.EnsureSuccessStatusCode();
-        var json=await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<BookingDto>(json,_jsonOptions)??throw new Exception("Failed to create booking");
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<BookingDto>(json, _jsonOptions) ?? throw new Exception("Failed to create booking");
     }
 
     public async Task PayBooking(int id)
     {
         await SetAuthHeader();
-        var response=await _client.PostAsync($"api/payments/booking/{id}/pay", null);
+        var response = await _client.PostAsync($"api/payments/booking/{id}/pay", null);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task CancelBooking(int id)
     {
         await SetAuthHeader();
-        var response=await _client.PostAsync($"api/bookings/{id}/cancel", null);
+        var response = await _client.PostAsync($"api/bookings/{id}/cancel", null);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<BookingDto> GetBookingById(int id)
     {
         await SetAuthHeader();
-        var response=await _client.GetAsync($"api/bookings/{id}");
+        var response = await _client.GetAsync($"api/bookings/{id}");
         response.EnsureSuccessStatusCode();
-        var content=await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<BookingDto>(content,_jsonOptions)??throw new Exception("Failed deserialize booking");
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<BookingDto>(content, _jsonOptions) ?? throw new Exception("Failed deserialize booking");
     }
 
     public async Task EditProfile(UpdateProfileRequest req)
@@ -207,21 +207,40 @@ public class ApiClient:IApiClient
     public async Task<HotelDto> CreateHotel(HotelUpdateRequest dto)
     {
         await SetAuthHeader();
-        var json=JsonSerializer.Serialize(dto);
-        var resp=await _client.PostAsync("/api/hotels", new StringContent(json,Encoding.UTF8,"application/json"));
+        var json = JsonSerializer.Serialize(dto);
+        var resp = await _client.PostAsync("/api/hotels", new StringContent(json, Encoding.UTF8, "application/json"));
         resp.EnsureSuccessStatusCode();
-        var content=await resp.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<HotelDto>(content,_jsonOptions)!;
+        var content = await resp.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<HotelDto>(content, _jsonOptions)!;
     }
 
     public async Task DeleteHotel(int id)
     {
         await SetAuthHeader();
-        var resp=await _client.DeleteAsync($"/api/hotels/{id}");
+        var resp = await _client.DeleteAsync($"/api/hotels/{id}");
         resp.EnsureSuccessStatusCode();
     }
 
-    public async Task<RoomDto> CreateRoom(RoomUpdateRequest dto){await SetAuthHeader();var resp=await _client.PostAsync("/api/rooms",new StringContent(JsonSerializer.Serialize(dto),Encoding.UTF8,"application/json"));resp.EnsureSuccessStatusCode();var json=await resp.Content.ReadAsStringAsync();return JsonSerializer.Deserialize<RoomDto>(json,_jsonOptions)!;}
-    public async Task UpdateRoom(int id,RoomUpdateRequest dto){await SetAuthHeader();var resp=await _client.PutAsync($"/api/rooms/{id}",new StringContent(JsonSerializer.Serialize(dto),Encoding.UTF8,"application/json"));resp.EnsureSuccessStatusCode();}
-    public async Task DeleteRoom(int id){await SetAuthHeader();var resp=await _client.DeleteAsync($"/api/rooms/{id}");resp.EnsureSuccessStatusCode();}
+    public async Task<RoomDto> CreateRoom(RoomUpdateRequest dto) { await SetAuthHeader(); var resp = await _client.PostAsync("/api/rooms", new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json")); resp.EnsureSuccessStatusCode(); var json = await resp.Content.ReadAsStringAsync(); return JsonSerializer.Deserialize<RoomDto>(json, _jsonOptions)!; }
+    public async Task UpdateRoom(int id, RoomUpdateRequest dto) { await SetAuthHeader(); var resp = await _client.PutAsync($"/api/rooms/{id}", new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json")); resp.EnsureSuccessStatusCode(); }
+    public async Task DeleteRoom(int id) { await SetAuthHeader(); var resp = await _client.DeleteAsync($"/api/rooms/{id}"); resp.EnsureSuccessStatusCode(); }
+    public async Task<List<string>> GetHotelImagesAsync(int hotelId)
+    {
+        try
+        {
+            var response = await _client.GetAsync($"/api/hotels/{hotelId}/images");
+            
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return new List<string>();
+                
+            response.EnsureSuccessStatusCode();
+            
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<string>>(json, _jsonOptions) ?? new List<string>();
+        }
+        catch (Exception)
+        {
+            return new List<string>();
+        }
+    }
 } 
