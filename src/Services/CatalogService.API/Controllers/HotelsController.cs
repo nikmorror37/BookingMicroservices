@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using System.Text.RegularExpressions; 
 
 namespace CatalogService.API.Controllers
 {
@@ -19,6 +20,8 @@ namespace CatalogService.API.Controllers
             _context = context;
         }
 
+        private static string NormalizeFolderName(string text)
+        => Regex.Replace(text, "[^A-Za-z0-9]", "");
 
         /// GET api/hotels
         /// Support:
@@ -85,17 +88,6 @@ namespace CatalogService.API.Controllers
             return Ok(hotels);
         }
 
-
-        // GET: api/Hotels/5
-        // [HttpGet("{id}")]
-        // public async Task<ActionResult<Hotel>> GetHotel(int id)
-        // {
-        //     var hotel = await _context.Hotels.FindAsync(id);
-        //     if (hotel == null) return NotFound();
-        //     return hotel;
-        // }
-
-
         /// GET api/hotels/{id}
         [HttpGet("{id:int}", Name = "GetHotelById")]
         public async Task<ActionResult<Hotel>> GetById(int id)
@@ -106,37 +98,48 @@ namespace CatalogService.API.Controllers
             return Ok(hotel);
         }
 
-
-        // POST: api/Hotels
+        /// POST api/hotels
         // [HttpPost]
-        // public async Task<ActionResult<Hotel>> CreateHotel(Hotel hotel)
+        // [Authorize(Roles = "Admin")]
+        // public async Task<ActionResult<Hotel>> Create([FromBody] Hotel hotel)
         // {
         //     _context.Hotels.Add(hotel);
         //     await _context.SaveChangesAsync();
-        //     return CreatedAtAction(nameof(GetHotel), new { id = hotel.Id }, hotel);
+        //     return CreatedAtAction(nameof(GetById), new { id = hotel.Id }, hotel);
         // }
-
 
         /// POST api/hotels
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Hotel>> Create([FromBody] Hotel hotel)
         {
+            // Добавляем отель в контекст БД
             _context.Hotels.Add(hotel);
+            // Сохраняем в БД, чтобы получить сгенерированный ID
             await _context.SaveChangesAsync();
+
+            // НОВЫЙ КОД: Создаем папку для изображений нового отеля
+            // Формируем имя папки из названия отеля, убирая спецсимволы
+            var folderName = hotel.Name
+                .Replace(" ", "")
+                .Replace("'", "")
+                .Replace("_", "")
+                .Replace(".", "")
+                .Replace(",", "")
+                .Replace("-", "");
+
+            // Получаем путь к папке Images и добавляем имя папки отеля
+            var hotelFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images", folderName);
+
+            // Создаем папку, если она еще не существует
+            if (!Directory.Exists(hotelFolderPath))
+            {
+                Directory.CreateDirectory(hotelFolderPath);
+            }
+
+            // Возвращаем созданный отель с указанием местоположения в заголовке
             return CreatedAtAction(nameof(GetById), new { id = hotel.Id }, hotel);
         }
-
-
-        // PUT: api/Hotels/5
-        // [HttpPut("{id}")]
-        // public async Task<IActionResult> UpdateHotel(int id, Hotel hotel)
-        // {
-        //     if (id != hotel.Id) return BadRequest();
-        //     _context.Entry(hotel).State = EntityState.Modified;
-        //     await _context.SaveChangesAsync();
-        //     return NoContent();
-        // }
 
         /// PUT api/hotels/{id}
         [HttpPut("{id:int}")]
@@ -151,17 +154,6 @@ namespace CatalogService.API.Controllers
             return NoContent();
         }
 
-        // DELETE: api/Hotels/5
-        // [HttpDelete("{id}")]
-        // public async Task<IActionResult> DeleteHotel(int id)
-        // {
-        //     var hotel = await _context.Hotels.FindAsync(id);
-        //     if (hotel == null) return NotFound();
-        //     _context.Hotels.Remove(hotel);
-        //     await _context.SaveChangesAsync();
-        //     return NoContent();
-        // }
-
         /// DELETE api/hotels/{id}
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin")]
@@ -175,14 +167,14 @@ namespace CatalogService.API.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
-        
+
         [HttpGet("{id}/images")]
         public async Task<ActionResult<List<string>>> GetHotelImages(int id)
         {
             var hotel = await _context.Hotels.FindAsync(id);
             if (hotel == null)
                 return NotFound();
-            
+
             var images = new List<string>();
 
             // first add the main image of the hotel
@@ -190,7 +182,7 @@ namespace CatalogService.API.Controllers
             {
                 images.Add(hotel.ImageUrl);
             }
-            
+
             // Mapping hotel IDs to folder names in the /Images/.. 
             var hotelFolderMap = new Dictionary<int, string>
             {
@@ -200,43 +192,53 @@ namespace CatalogService.API.Controllers
                 { 4, "IbisStylesCentrumWarsaw" },
                 { 5, "MercureGrandWarsaw" }
             };
-            
+
             if (!hotelFolderMap.TryGetValue(id, out var folderName))
             {
+                folderName = NormalizeFolderName(hotel.Name);
                 //If there is no mapping, try to find a folder by the name of the hotel
-                folderName = hotel.Name.Replace(" ", "").Replace("Styles", "").Replace("Centrum", "").Replace("City", "");
+                // folderName = hotel.Name.Replace(" ", "").Replace("Styles", "").Replace("Centrum", "").Replace("City", "");
             }
 
             //Path to specific hotel folder 
             var hotelImagesPath = Path.Combine(Directory.GetCurrentDirectory(), "Images", folderName);
-            
+
             if (Directory.Exists(hotelImagesPath))
             {
                 // get all pictures of the hotel (except photos of rooms)
-                var hotelImages = Directory.GetFiles(hotelImagesPath, "*.jpg")
-                    .Where(f => {
+                var validExt = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+
+                var hotelImages = Directory.EnumerateFiles(hotelImagesPath)
+                //var hotelImages = Directory.GetFiles(hotelImagesPath, "*.jpg")
+                    .Where(f =>
+                    {
+                        var ext = Path.GetExtension(f).ToLower();
+                        if (!validExt.Contains(ext)) return false;
+
                         var fileName = Path.GetFileName(f).ToLower();
-                        var fullPath = $"/images/{folderName}/{Path.GetFileName(f)}";
-                        
+                        var fullPath = $"/images/{folderName}/{Path.GetFileName(f)}".ToLower(); //before was without .ToLower()
+
                         // сheck if it's a room image
-                        bool isRoomImage = fileName.Contains("double_") || 
-                                          fileName.Contains("single_") || 
-                                          fileName.Contains("suite_") || 
+                        bool isRoomImage = fileName.Contains("double_") ||
+                                          fileName.Contains("single_") ||
+                                          fileName.Contains("suite_") ||
                                           fileName.Contains("twin_");
-                
+
                         // сheck if it's the main image (case-insensitive comparison)
-                        bool isMainImage = !string.IsNullOrEmpty(hotel.ImageUrl) && 
-                                          fullPath.Equals(hotel.ImageUrl, StringComparison.OrdinalIgnoreCase);
-                
+                        bool isMainImage = !string.IsNullOrEmpty(hotel.ImageUrl) &&
+                                          //fullPath.Equals(hotel.ImageUrl, StringComparison.OrdinalIgnoreCase);
+                                           fullPath == hotel.ImageUrl.ToLower();
+                                           
                         return !isRoomImage && !isMainImage;
                     })
                     .OrderBy(f => f)
                     .Select(f => $"/images/{folderName}/{Path.GetFileName(f)}")
                     .ToList();
-                
+
                 images.AddRange(hotelImages);
             }
             return Ok(images);
         }
+        
     }
 }

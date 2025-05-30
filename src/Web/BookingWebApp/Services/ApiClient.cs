@@ -180,20 +180,111 @@ public class ApiClient : IApiClient
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<ImageUploadResponse> UploadImage(IFormFile file)
+    // public async Task<ImageUploadResponse> UploadImage(IFormFile file)
+    // {
+    //     await SetAuthHeader();
+    //     using var ms = new MemoryStream();
+    //     await file.CopyToAsync(ms);
+    //     ms.Position = 0;
+    //     var content = new MultipartFormDataContent();
+    //     var fileContent = new ByteArrayContent(ms.ToArray());
+    //     fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+    //     content.Add(fileContent, "file", file.FileName);
+    //     var response = await _client.PostAsync("/api/images", content);
+    //     response.EnsureSuccessStatusCode();
+    //     var json = await response.Content.ReadAsStringAsync();
+    //     return JsonSerializer.Deserialize<ImageUploadResponse>(json, _jsonOptions) ?? throw new Exception("Cannot deserialize image response");
+    // }
+    
+    public async Task<ImageUploadResponse> UploadImage(IFormFile file, int? hotelId = null)
     {
         await SetAuthHeader();
         using var ms = new MemoryStream();
         await file.CopyToAsync(ms);
         ms.Position = 0;
+        
         var content = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent(ms.ToArray());
         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
         content.Add(fileContent, "file", file.FileName);
-        var response = await _client.PostAsync("/api/images", content);
+        
+        // Добавляем hotelId в URL если указан
+        var url = hotelId.HasValue ? $"/api/images?hotelId={hotelId}" : "/api/images";
+        
+        var response = await _client.PostAsync(url, content);
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<ImageUploadResponse>(json, _jsonOptions) ?? throw new Exception("Cannot deserialize image response");
+    }
+
+    // НОВЫЙ метод для загрузки дополнительных изображений в папку отеля
+    public async Task<UploadAdditionalImagesResponse> UploadAdditionalImages(int hotelId, List<IFormFile> files)
+    {
+        // Устанавливаем JWT токен для авторизации запроса
+        await SetAuthHeader();
+
+        // Создаем multipart/form-data контент для передачи файлов
+        using var content = new MultipartFormDataContent();
+
+        // Обрабатываем каждый файл из списка
+        foreach (var file in files)
+        {
+            // Создаем поток памяти для временного хранения файла
+            using var ms = new MemoryStream();
+            // Копируем содержимое файла в поток
+            await file.CopyToAsync(ms);
+            // Возвращаем указатель потока в начало
+            ms.Position = 0;
+
+            // Создаем контент из массива байтов файла
+            var fileContent = new ByteArrayContent(ms.ToArray());
+            // Устанавливаем правильный Content-Type для файла
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+            // Добавляем файл в multipart контент с именем "files" (должно совпадать с параметром на сервере)
+            content.Add(fileContent, "files", file.FileName);
+        }
+
+        // Отправляем POST запрос на сервер
+        var response = await _client.PostAsync($"/api/images/hotel/{hotelId}/additional", content);
+        // Проверяем успешность запроса, иначе выбросит исключение
+        response.EnsureSuccessStatusCode();
+
+        // Читаем JSON ответ от сервера
+        var json = await response.Content.ReadAsStringAsync();
+        // Десериализуем ответ в объект UploadAdditionalImagesResponse
+        return JsonSerializer.Deserialize<UploadAdditionalImagesResponse>(json, _jsonOptions)
+            ?? new UploadAdditionalImagesResponse(new List<string>());
+    }
+
+    public async Task<ImageUploadResponse> UploadRoomImage(
+                                            IFormFile file,
+                                            int       hotelId,
+                                            string    roomNumber,
+                                            RoomType  type)
+    {
+        await SetAuthHeader();
+
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms);
+        ms.Position = 0;
+
+        var content = new MultipartFormDataContent();
+        var fc = new ByteArrayContent(ms.ToArray());
+        fc.Headers.ContentType =
+            new MediaTypeHeaderValue(file.ContentType);
+        content.Add(fc, "file", file.FileName);
+
+        var url =
+            $"/api/images/hotel/{hotelId}/room" +
+            $"?roomNumber={Uri.EscapeDataString(roomNumber)}" +
+            $"&roomType={type}";
+
+        var resp = await _client.PostAsync(url, content);
+        resp.EnsureSuccessStatusCode();
+
+        var json = await resp.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<ImageUploadResponse>(json, _jsonOptions)
+            ?? throw new Exception("Cannot deserialize image response");
     }
 
     public async Task UpdateHotel(int id, HotelUpdateRequest hotel)

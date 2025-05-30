@@ -26,7 +26,7 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Create and copy images directory
-RUN mkdir -p /app/Images
-COPY --from=build /src/src/Services/CatalogService.API/Images /app/Images
+# RUN mkdir -p /app/Images
+# COPY --from=build /src/src/Services/CatalogService.API/Images /app/Images
 
 ENTRYPOINT ["dotnet", "CatalogService.API.dll"] 

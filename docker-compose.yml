@@ -57,8 +57,9 @@ services:
     build:
       context: .
       dockerfile: src/Services/CatalogService.API/Dockerfile
-    # volumes:
-    #   - ./catalog-images:/app/Images
+    volumes:
+      # - ./catalog-images:/app/Images
+      - ./src/Web/BookingWebApp/wwwroot/catalog-images:/app/Images
     depends_on:
       sqlserver:
         condition: service_started

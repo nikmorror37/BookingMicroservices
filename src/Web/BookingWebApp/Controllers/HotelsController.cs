@@ -7,10 +7,10 @@ using Refit;
 
 namespace BookingWebApp.Controllers;
 
-public class HotelsController:Controller
+public class HotelsController : Controller
 {
     private readonly IApiClient _api;
-    public HotelsController(IApiClient api)=>_api=api;
+    public HotelsController(IApiClient api) => _api = api;
 
     public async Task<IActionResult> Index([FromQuery] string? search, int? minStars, double? maxDistance, string? sort, int page = 1)
     {
@@ -54,18 +54,22 @@ public class HotelsController:Controller
 
     // Details: /Hotels/Details/{id}
     [Route("Hotels/Details/{id}")]
-    public async Task<IActionResult> Details(int id,DateTime? checkIn,DateTime? checkOut)
+    public async Task<IActionResult> Details(int id, DateTime? checkIn, DateTime? checkOut)
     {
         var hotel = await _api.GetHotel(id);
         IList<RoomDto>? rooms = null;
-        if(checkIn.HasValue && checkOut.HasValue){
-            if(HttpContext.Session.GetString("jwt") is null){
-                return RedirectToAction("Login","Account");
+        if (checkIn.HasValue && checkOut.HasValue)
+        {
+            if (HttpContext.Session.GetString("jwt") is null)
+            {
+                return RedirectToAction("Login", "Account");
             }
-            try{
-                rooms = await _api.AvailableRooms(new AvailableFilter(id,checkIn.Value,checkOut.Value));
+            try
+            {
+                rooms = await _api.AvailableRooms(new AvailableFilter(id, checkIn.Value, checkOut.Value));
             }
-            catch(Refit.ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest){
+            catch (Refit.ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
                 // The API returned 400, which are probably non-valid dates.
                 // just don’t show the rooms, leaving ModelState message.
                 ModelState.AddModelError(string.Empty, "Please select a valid date range.");
@@ -79,5 +83,16 @@ public class HotelsController:Controller
             AdditionalImages = additionalImages
         };
         return View(vm);
+    }
+    
+    // НОВЫЙ метод для получения изображений отеля через AJAX
+    // Используется в админке для отображения существующих изображений
+    [HttpGet("GetImages/{id}")]
+    public async Task<IActionResult> GetImages(int id)
+    {
+        // Вызываем API для получения списка изображений отеля
+        var images = await _api.GetHotelImagesAsync(id);
+        // Возвращаем список как JSON для JavaScript
+        return Json(images);
     }
 } 

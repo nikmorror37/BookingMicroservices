@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.Http;
 
 namespace BookingWebApp.Controllers;
 
-[Authorize(Roles="Admin")]
+[Authorize(Roles = "Admin")]
 [Route("Admin/Hotels")]
-public class AdminHotelsController:Controller
+public class AdminHotelsController : Controller
 {
     private readonly IApiClient _api;
-    public AdminHotelsController(IApiClient api){_api=api;}
+    public AdminHotelsController(IApiClient api) { _api = api; }
 
     [HttpGet("Edit/{id}")]
     public async Task<IActionResult> Edit(int id)
@@ -18,15 +18,15 @@ public class AdminHotelsController:Controller
         var hotel = await _api.GetHotel(id);
         var vm = new HotelEditVm
         {
-            Id=hotel.Id,
-            Name=hotel.Name,
-            Address=hotel.Address,
-            City=hotel.City,
-            Country=hotel.Country,
-            Stars=hotel.Stars,
-            DistanceFromCenter=hotel.DistanceFromCenter,
-            Description=hotel.Description,
-            ImageUrl=hotel.ImageUrl
+            Id = hotel.Id,
+            Name = hotel.Name,
+            Address = hotel.Address,
+            City = hotel.City,
+            Country = hotel.Country,
+            Stars = hotel.Stars,
+            DistanceFromCenter = hotel.DistanceFromCenter,
+            Description = hotel.Description,
+            ImageUrl = hotel.ImageUrl
         };
         return View(vm);
     }
@@ -34,25 +34,25 @@ public class AdminHotelsController:Controller
     [HttpPost("Edit/{id}")]
     public async Task<IActionResult> Edit(int id, HotelEditVm vm, IFormFile? image)
     {
-        if(!ModelState.IsValid)
+        if (!ModelState.IsValid)
             return View(vm);
 
         if (image != null && image.Length > 0)
         {
-            var res = await _api.UploadImage(image);
+            //var res = await _api.UploadImage(image);
+            var res = await _api.UploadImage(image, id);
             vm.ImageUrl = res.ImageUrl;
-            //vm.ImageUrl = res.ImageUrl.StartsWith("/") ? "http://localhost:8080" + res.ImageUrl : res.ImageUrl;
         }
 
         var req = new HotelUpdateRequest(vm.Id, vm.Name, vm.Address, vm.City, vm.Country, vm.Stars, vm.DistanceFromCenter, vm.ImageUrl, vm.Description);
         await _api.UpdateHotel(id, req);
-        return RedirectToAction("Details","Hotels", new { id });
+        return RedirectToAction("Details", "Hotels", new { id });
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {
-        var hotels = await _api.Hotels(new HotelFilter(null,null,null));
+        var hotels = await _api.Hotels(new HotelFilter(null, null, null));
         return View("Index", hotels);
     }
 
@@ -60,16 +60,25 @@ public class AdminHotelsController:Controller
     public IActionResult Create() => View("Create", new HotelEditVm());
 
     [HttpPost("Create")]
-    public async Task<IActionResult> Create(HotelEditVm vm,IFormFile? image)
+    public async Task<IActionResult> Create(HotelEditVm vm, IFormFile? image)
     {
-        if(!ModelState.IsValid) return View("Create",vm);
+        if (!ModelState.IsValid) return View("Create", vm);
+
+        // 1. создаём отель без ImageUrl
+        var created = await _api.CreateHotel(
+            new HotelUpdateRequest(0, vm.Name, vm.Address, vm.City, vm.Country,
+                               vm.Stars, vm.DistanceFromCenter, null, vm.Description));
+
         if (image != null && image.Length > 0)
         {
-            var res = await _api.UploadImage(image);
-            vm.ImageUrl = res.ImageUrl;
-            //vm.ImageUrl = res.ImageUrl.StartsWith("/")?"http://localhost:8080"+res.ImageUrl:res.ImageUrl;
+            //var res = await _api.UploadImage(image);
+            var res = await _api.UploadImage(image, created.Id);
+            //vm.ImageUrl = res.ImageUrl;
+            await _api.UpdateHotel(created.Id,
+            new HotelUpdateRequest(created.Id, vm.Name, vm.Address, vm.City, vm.Country,
+                                   vm.Stars, vm.DistanceFromCenter, res.ImageUrl, vm.Description));
         }
-        await _api.CreateHotel(new HotelUpdateRequest(0,vm.Name,vm.Address,vm.City,vm.Country,vm.Stars,vm.DistanceFromCenter,vm.ImageUrl,vm.Description));
+        //await _api.CreateHotel(new HotelUpdateRequest(0, vm.Name, vm.Address, vm.City, vm.Country, vm.Stars, vm.DistanceFromCenter, vm.ImageUrl, vm.Description));
         return RedirectToAction("Index");
     }
 
@@ -79,6 +88,29 @@ public class AdminHotelsController:Controller
         await _api.DeleteHotel(id);
         return RedirectToAction("Index");
     }
+    
+    // НОВЫЙ метод для загрузки дополнительных изображений через AJAX
+    [HttpPost("{id}/UploadImages")]
+    public async Task<IActionResult> UploadImages(int id, List<IFormFile> files)
+    {
+        // Проверяем, что файлы были переданы
+        if (files == null || files.Count == 0)
+            return BadRequest("No files uploaded");
+
+        try
+        {
+            // Вызываем API для загрузки изображений в папку отеля
+            var result = await _api.UploadAdditionalImages(id, files);
+            // Возвращаем успешный результат с URL загруженных изображений
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            // В случае ошибки возвращаем BadRequest с сообщением
+            return BadRequest(ex.Message);
+        }
+    }
+
 }
 
 public class HotelEditVm

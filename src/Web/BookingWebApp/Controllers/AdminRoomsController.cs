@@ -31,15 +31,24 @@ public class AdminRoomsController:Controller
     [HttpPost("Create")]
     public async Task<IActionResult> Create(RoomEditVm vm, IFormFile? image)
     {
-        if(!ModelState.IsValid){ViewBag.Hotels = await _api.Hotels(new HotelFilter(null,null,null));return View("Create",vm);}
+        if(!ModelState.IsValid)
+        {
+            ViewBag.Hotels = await _api.Hotels(new HotelFilter(null,null,null));
+            return View("Create", vm);
+        }
+
         if (image != null && image.Length > 0)
         {
-            var res = await _api.UploadImage(image);
+            //var res = await _api.UploadImage(image);
+            var res = await _api.UploadRoomImage(
+            image,           // file
+            vm.HotelId,      
+            vm.Number,        
+            vm.Type);
             vm.RoomImageUrl = res.ImageUrl;
-            //vm.RoomImageUrl = res.ImageUrl.StartsWith("/")?"http://localhost:8080"+res.ImageUrl:res.ImageUrl;
         }
         await _api.CreateRoom(ToReq(vm));
-        return RedirectToAction("Index",new{hotelId=vm.HotelId});
+        return RedirectToAction("Index", new {hotelId = vm.HotelId});
     }
 
     [HttpGet("Edit/{id}")]
@@ -55,15 +64,19 @@ public class AdminRoomsController:Controller
     [HttpPost("Edit/{id}")]
     public async Task<IActionResult> Edit(int id,RoomEditVm vm,IFormFile? image)
     {
-        if(!ModelState.IsValid){ViewBag.Hotels = await _api.Hotels(new HotelFilter(null,null,null));return View("Edit",vm);}
+        if(!ModelState.IsValid)
+        {
+            ViewBag.Hotels = await _api.Hotels(new HotelFilter(null,null,null));
+            return View("Edit", vm);
+        }
         if (image != null && image.Length > 0)
         {
-            var res = await _api.UploadImage(image);
+            //var res = await _api.UploadImage(image);
+            var res = await _api.UploadRoomImage(image, vm.HotelId, vm.Number, vm.Type);
             vm.RoomImageUrl = res.ImageUrl;
-            //vm.RoomImageUrl= res.ImageUrl.StartsWith("/")?"http://localhost:8080"+res.ImageUrl:res.ImageUrl;
         }
-        await _api.UpdateRoom(id,ToReq(vm));
-        return RedirectToAction("Index",new{hotelId=vm.HotelId});
+        await _api.UpdateRoom(id, ToReq(vm));
+        return RedirectToAction("Index", new{hotelId = vm.HotelId});
     }
 
     [HttpPost("Delete/{id}")]

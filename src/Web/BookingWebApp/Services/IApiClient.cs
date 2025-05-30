@@ -27,7 +27,15 @@ public interface IApiClient
     // profile
     [Put("/api/account/me")] Task EditProfile([Body] UpdateProfileRequest req);
 
-    [Post("/api/images")] Task<ImageUploadResponse> UploadImage(IFormFile file);
+    //[Post("/api/images")] Task<ImageUploadResponse> UploadImage(IFormFile file);
+    Task<ImageUploadResponse> UploadImage(IFormFile file, int? hotelId = null);
+
+    // НОВЫЙ метод для загрузки дополнительных изображений отеля
+    // Использовали атрибут Refit для указания HTTP метода и маршрута, но
+    // Убрали Refit атрибуты, так как мы используем ручную реализацию в ApiClient
+    Task<UploadAdditionalImagesResponse> UploadAdditionalImages(int hotelId, List<IFormFile> files);
+
+    Task<ImageUploadResponse> UploadRoomImage(IFormFile file, int hotelId, string roomNumber, RoomType type);
     [Put("/api/hotels/{id}")] Task UpdateHotel(int id, [Body] HotelUpdateRequest hotel);
 
     [Post("/api/hotels")] Task<HotelDto> CreateHotel([Body] HotelUpdateRequest dto);
@@ -70,7 +78,11 @@ public record AvailableFilter(int HotelId,DateTime CheckIn,DateTime CheckOut);
 public record UpdateProfileRequest(string? FirstName,string? LastName,string? Address,string? City,string? State,string? PostalCode,string? Country,DateTime? DateOfBirth);
 
 public record ImageUploadResponse(string ImageUrl);
-public record HotelUpdateRequest(int Id,string Name,string Address,string City,string Country,int Stars,double DistanceFromCenter,string? ImageUrl,string? Description);
+
+// НОВЫЙ record для ответа от сервера с URL загруженных изображений
+public record UploadAdditionalImagesResponse(List<string> ImageUrls);
+
+public record HotelUpdateRequest(int Id, string Name, string Address, string City, string Country, int Stars, double DistanceFromCenter, string? ImageUrl, string? Description);
 
 public record RoomUpdateRequest(int Id,int HotelId,string Number,RoomType Type,decimal Price,string? Description,int Capacity,int NumberOfBeds,bool IsAvailable,string? RoomImageUrl);
 #endregion 
