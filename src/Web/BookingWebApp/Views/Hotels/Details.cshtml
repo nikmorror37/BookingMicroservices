@@ -1,13 +1,15 @@
 @model BookingWebApp.Models.HotelDetailsVm
-@using BookingWebApp.Extensions           
-@inject IConfiguration Config 
+@using BookingWebApp.Extensions
+@inject IConfiguration Config
+
 @{
-    ViewData["Title"] = Model.Hotel.Name;
-    var checkInStr = Model.CheckIn?.ToString("yyyy-MM-dd") ?? string.Empty;
+    ViewData["Title"] = $"{Model.Hotel.Name} {Model.Hotel.City}";
+    var gateway = Config["GatewayBase"] ?? "http://localhost:8080";
+    var checkInStr  = Model.CheckIn?.ToString("yyyy-MM-dd") ?? string.Empty;
     var checkOutStr = Model.CheckOut?.ToString("yyyy-MM-dd") ?? string.Empty;
 }
 <div class="mb-4">
-  <h2>@Model.Hotel.Name</h2>
+  <h2>@Model.Hotel.Name @Model.Hotel.City</h2>
   <p>
     @for(int i=0;i<Model.Hotel.Stars;i++){<i class="bi bi-star-fill text-warning"></i>}
     <span class="ms-2">@Model.Hotel.Stars ★</span>
@@ -15,7 +17,6 @@
 </div>
 @{
     var imgList = new List<string>();
-    var gateway = Config["GatewayBase"] ?? "http://localhost:8080";
 
     if (Model.AdditionalImages?.Any() == true)
     {
@@ -32,7 +33,6 @@
             }
         }
     }
-
     else if (!string.IsNullOrEmpty(Model.Hotel.ImageUrl))
         imgList.Add(Model.Hotel.ImageUrl.ToGatewayUrl(gateway));         
     else
@@ -40,14 +40,85 @@
 }
 @await Html.PartialAsync("_Gallery", imgList)
 
-<div class="mb-4">
-  <h5 class="mb-2">About this hotel</h5>
-  <p>@Model.Hotel.Address, @Model.Hotel.City, @Model.Hotel.Country</p>
-  <p><i class="bi bi-geo-alt-fill"></i> @Model.Hotel.DistanceFromCenter.ToString("0.#") km to city center</p>
-  @if(!string.IsNullOrEmpty(Model.Hotel.Description)){
-    <p class="mt-2">@Model.Hotel.Description</p>
-  }
+<div class="row mb-4 gy-4">
+  <div class="col-lg-8">
+      <h5 class="mb-2">About this hotel</h5>
+      @* <p>@Model.Hotel.Address, @Model.Hotel.City, @Model.Hotel.Country</p> *@
+      <p><i class="bi bi-pin-map-fill me-1"></i>
+         @Model.Hotel.Address, @Model.Hotel.City, @Model.Hotel.Country
+      </p>
+      <p><i class="bi bi-geo-alt-fill"></i>
+         @Model.Hotel.DistanceFromCenter.ToString("0.#") km to city center</p>
+
+      @if (!string.IsNullOrEmpty(Model.Hotel.Description))
+      {
+          <p class="mt-2">@Model.Hotel.Description</p>
+      }
+
+      <h6 class="mt-4">Amenities</h6>
+      <div class="row row-cols-2 row-cols-md-3 g-2 small">
+            <div class="col"><i class="bi bi-wifi me-1"></i>Free Wi-Fi</div>
+            <div class="col"><i class="bi bi-cup-hot me-1"></i>Breakfast</div>
+            <div class="col"><i class="bi bi-car-front me-1"></i>Parking</div>
+            <div class="col"><i class="bi bi-heart-pulse me-1"></i>Gym</div>
+            <div class="col"><i class="bi bi-snow me-1"></i>A/C</div>
+            <div class="col"><i class="bi bi-people me-1"></i>24/7 desk</div>
+      </div>
+  </div>
+
+  <div class="col-lg-4">
+      <h5 class="mb-2">Location</h5>
+      <div id="hotelMap" class="rounded" style="height:300px;"></div>
+  </div>
 </div>
+
+
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+      crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+<script defer
+        src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"
+        integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script defer>
+(() => {
+  const addr = `@($"{Model.Hotel.Address}, {Model.Hotel.City}, {Model.Hotel.Country}")`;
+
+  const url = 'https://nominatim.openstreetmap.org/search'
+            + '?format=jsonv2'         
+            + '&limit=1'
+            + '&email=test@gmail.com'
+            + '&q=' + encodeURIComponent(addr);
+
+  fetch(url)
+    .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    })
+    .then(d => {
+        if (!d.length) throw new Error('no results');
+        const {lat, lon} = d[0];
+
+        const map = L.map('hotelMap', {scrollWheelZoom:false})
+                     .setView([lat, lon], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution:'© OpenStreetMap contributors'
+        }).addTo(map);
+
+        L.marker([lat, lon]).addTo(map)
+         .bindPopup(`@($"{Model.Hotel.Name} {Model.Hotel.City}")`).openPopup();
+    })
+    .catch(err => {
+        console.warn('Geocode error:', err.message);
+        document.getElementById('hotelMap').innerHTML =
+          '<div class="text-muted p-4">Map unavailable</div>';
+    });
+})();
+</script>
+
 <hr/>
 <h4 class="mb-3">Find available rooms</h4>
 <form class="row row-cols-lg-auto g-2 align-items-center mb-4">
@@ -62,6 +133,7 @@
     <button class="btn btn-primary">Search</button>
   </div>
 </form>
+
 <script>
  (function(){
    const inEl = document.getElementById('detailCheckIn');
@@ -82,6 +154,7 @@
    sync();
  })();
 </script>
+
 @if(Model.AvailableRooms is not null){
   if(Model.AvailableRooms.Any()){
     ViewBag.CheckIn = checkInStr;
