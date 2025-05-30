@@ -7,8 +7,6 @@
     var price = Model.Booking.Room.Price;
     var total = Model.TotalAmount;
     var today = DateTime.UtcNow;
-    //var img = string.IsNullOrEmpty(Model.Booking.Hotel.ImageUrl)? "/img/placeholder-hotel.jpg" : (Model.Booking.Hotel.ImageUrl.StartsWith("http")?Model.Booking.Hotel.ImageUrl : "http://localhost:8080"+Model.Booking.Hotel.ImageUrl);
-    //string baseUrl = "http://localhost:8080";
     var gateway = Config["GatewayBase"] ?? "http://localhost:8080";
     var img = string.IsNullOrEmpty(Model.Booking.Hotel.ImageUrl)
               ? "/img/placeholder-hotel.jpg"
@@ -66,8 +64,18 @@
     </div>
     <div class="col-md-6">
       <label class="form-label">Card number</label>
-      <input class="form-control" name="cardNumber" inputmode="numeric" pattern="\d{16}" minlength="16" maxlength="16" required />
-      <div class="invalid-feedback">Card number must be exactly 16 digits.</div>
+      <div class="position-relative"> 
+          <input  id="cardNumber"
+                  class="form-control pe-5"              
+                  name="cardNumber"
+                  inputmode="numeric"
+                  pattern="\d{15,16}"                    
+                  minlength="15" maxlength="16"
+                  required />
+          <span id="cardIcon"
+                class="position-absolute end-0 top-50 translate-middle-y me-2"></span>
+      </div> 
+      <div class="invalid-feedback">Invalid or unknown card number.</div>
     </div>
   </div>
   <div class="row g-2 mt-2">
@@ -91,11 +99,16 @@
     </div>
     <div class="col-md-2">
       <label class="form-label">CVV</label>
-      <input class="form-control" name="cvv" inputmode="numeric" pattern="\d{3}" minlength="3" maxlength="3" required />
-      <div class="invalid-feedback">CVV must be exactly 3 digits.</div>
+      <input id="cvv"
+         class="form-control"
+         name="cvv"
+         inputmode="numeric"
+         pattern="\d{3}"
+         minlength="3" maxlength="4"
+         required />
+      <div class="invalid-feedback">CVV must be 3 digits (4 for Amex).</div>
     </div>
   </div>
-  @* <button class="btn btn-success mt-3">Pay</button> *@
   <button type="submit" class="btn btn-success mt-3">
     <i class="bi bi-credit-card me-2"></i>Pay $@total.ToString("0.00")
   </button>
@@ -168,5 +181,61 @@
         }, false);
       });
     })();
+  </script>
+  <script>
+  /* ------------ helpers ------------ */
+  function luhnValid(num){
+      num = num.replace(/\D/g,'');
+      let sum = 0, dbl = false;
+      for(let i=num.length-1;i>=0;i--){
+          let d = parseInt(num[i]);
+          if(dbl){ d*=2; if(d>9) d-=9; }
+          sum+=d; dbl=!dbl;
+      }
+      return (sum%10)===0;
+  }
+  function cardType(num){
+      num = num.replace(/\D/g,'');
+      if(/^4/.test(num))                       return 'visa';
+      if(/^(5[1-5]|2[2-7])/.test(num))         return 'mc';
+      if(/^3[47]/.test(num))                   return 'amex';
+      return 'unknown';
+  }
+  function iconHtml(type,gateway){
+      switch(type){
+          case 'visa': return `<img src="${gateway}/images/paymentSystems/visa.svg" height="24">`;
+          case 'mc':   return `<img src="${gateway}/images/paymentSystems/mc.svg"   height="24">`;
+          case 'amex': return `<img src="${gateway}/images/paymentSystems/amex.svg" height="24">`;
+          default:     return '';
+      }
+  }
+  /* ------------ live validation & icon ------------ */
+  (() => {
+    const inp   = document.getElementById('cardNumber');
+    const icon  = document.getElementById('cardIcon');
+    const cvv   = document.getElementById('cvv');  
+    const gw    = '@gateway';
+
+    inp.addEventListener('input', () => {
+        const num  = inp.value;
+        const type = cardType(num);
+        icon.innerHTML = iconHtml(type,gw);
+
+        if (type === 'amex') {
+          cvv.pattern    = '\\d{4}';
+          cvv.placeholder = '1234';
+        } else {
+            cvv.pattern    = '\\d{3}';
+            cvv.placeholder = '123';
+        }
+
+        // bootstrap validation style toggle
+        if(num.length>=13){
+            inp.setCustomValidity(luhnValid(num)? '' : 'invalid');
+        }else{
+            inp.setCustomValidity('invalid');
+        }
+    });
+  })();
   </script>
 </form> 
