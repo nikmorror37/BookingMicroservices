@@ -61,11 +61,26 @@ namespace CatalogService.API.Controllers
             // filtration
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(h =>
-                    EF.Functions.Like(h.Name, $"%{search}%") ||
-                    EF.Functions.Like(h.City, $"%{search}%") ||
-                    EF.Functions.Like(h.Name + " " + h.City, $"%{search}%") ||
-                    EF.Functions.Like(h.City + " " + h.Name, $"%{search}%"));
+                var normalizedSearch = Regex.Replace(search.Trim(), @"\s+", " ").ToLower();
+                var words = normalizedSearch.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                if (words.Length == 1)
+                {
+                    var w = words[0];
+                    query = query.Where(h =>
+                        EF.Functions.Like(h.Name, $"%{w}%") ||
+                        EF.Functions.Like(h.City, $"%{w}%"));
+                }
+                else
+                {
+                    foreach (var w in words)
+                    {
+                        var term = w;             
+                        query = query.Where(h =>
+                            EF.Functions.Like(h.Name, $"%{term}%") ||
+                            EF.Functions.Like(h.City, $"%{term}%"));
+                    }
+                }
             }
 
             if (minStars.HasValue)

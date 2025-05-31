@@ -15,15 +15,44 @@
     </select>
   </div>
   <div class="col-12">
-    <input type="date" name="checkIn" class="form-control" value="@(ViewBag.CheckIn??"")" required />
+    <input type="date" id="searchCheckIn" name="checkIn" class="form-control"
+           value="@(ViewBag.CheckIn??"")"
+           min="@DateTime.UtcNow.Date.ToString("yyyy-MM-dd")" required />
   </div>
   <div class="col-12">
-    <input type="date" name="checkOut" class="form-control" value="@(ViewBag.CheckOut??"")" required />
+    <input type="date" id="searchCheckOut" name="checkOut" class="form-control"
+           value="@(ViewBag.CheckOut??"")"
+           min="@DateTime.UtcNow.Date.AddDays(1).ToString("yyyy-MM-dd")" required />
   </div>
   <div class="col-12">
     <button class="btn btn-primary">Search</button>
   </div>
 </form>
+
+<script>
+(function () {
+  const inEl  = document.getElementById('searchCheckIn');
+  const outEl = document.getElementById('searchCheckOut');
+  if (!inEl || !outEl) return;
+
+  function sync() {
+    if (inEl.value) {
+      const d = new Date(inEl.value);
+      d.setDate(d.getDate() + 1);
+      const minStr = d.toISOString().split('T')[0];
+      outEl.min = minStr;
+      if (outEl.value && outEl.value <= inEl.value) {
+        outEl.value = '';
+      }
+    } else {
+      outEl.min = '@DateTime.UtcNow.Date.AddDays(1).ToString("yyyy-MM-dd")';
+    }
+  }
+  inEl.addEventListener('change', sync);
+  sync();
+})();
+</script>
+
 @if(Model.Any()){
 <table class="table table-hover">
 <thead><tr><th>Room</th><th>Price</th><th></th></tr></thead>

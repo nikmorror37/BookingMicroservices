@@ -31,7 +31,7 @@
   <ul class="pagination">
     @{
         int currentPage = ViewBag.Page;
-        bool hasPrev = currentPage>1;
+        bool hasPrev = currentPage > 1;
         bool hasNext = (bool)ViewBag.HasNext;
     }
     <li class="page-item @(hasPrev?"":"disabled")">
