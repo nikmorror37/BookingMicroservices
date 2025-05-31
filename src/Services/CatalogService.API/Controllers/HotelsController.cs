@@ -63,8 +63,11 @@ namespace CatalogService.API.Controllers
             {
                 query = query.Where(h =>
                     EF.Functions.Like(h.Name, $"%{search}%") ||
-                    EF.Functions.Like(h.City, $"%{search}%"));
+                    EF.Functions.Like(h.City, $"%{search}%") ||
+                    EF.Functions.Like(h.Name + " " + h.City, $"%{search}%") ||
+                    EF.Functions.Like(h.City + " " + h.Name, $"%{search}%"));
             }
+
             if (minStars.HasValue)
             {
                 query = query.Where(h => h.Stars >= minStars.Value);
