@@ -154,19 +154,30 @@
  })();
 </script>
 
-@if(Model.AvailableRooms is not null){
-  if(Model.AvailableRooms.Any()){
-    ViewBag.CheckIn = checkInStr;
-    ViewBag.CheckOut = checkOutStr;
-    ViewBag.HotelId = Model.Hotel.Id;
-    <div class="row row-cols-1 row-cols-md-2 gy-4">
-    @foreach(var r in Model.AvailableRooms){
-      <div class="col">
-        @await Html.PartialAsync("_RoomCard", r)
-      </div>
+@if (Model.AvailableRooms is not null)
+{
+    // take one room of each type
+    var roomsToShow = Model.AvailableRooms
+                          .GroupBy(r => r.Type)     
+                          .Select(g => g.First())
+                          .ToList();
+    if (roomsToShow.Any())
+    {
+        ViewBag.CheckIn  = checkInStr;
+        ViewBag.CheckOut = checkOutStr;
+        ViewBag.HotelId  = Model.Hotel.Id;
+
+        <div class="row row-cols-1 row-cols-md-2 gy-4">
+        @foreach (var r in roomsToShow)
+        {
+            <div class="col">
+                @await Html.PartialAsync("_RoomCard", r)
+            </div>
+        }
+        </div>
     }
-    </div>
-  } else {
-    <div class="alert alert-warning">No rooms available for selected dates.</div>
-  }
-} 
+    else
+    {
+        <div class="alert alert-warning">No rooms available for selected dates.</div>
+    }
+}
