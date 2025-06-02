@@ -401,3 +401,6 @@ FodyWeavers.xsd
 
 # Uploaded images folder (created by admin upload)
 catalog-images/
+
+# ignore local environment files
+#.env

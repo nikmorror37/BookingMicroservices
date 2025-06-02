@@ -1,15 +1,24 @@
 using CatalogService.API.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Serilog;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("CatalogDb") 
     ?? throw new InvalidOperationException("Connection string 'CatalogDb' not found.");
 
+// configure Serilog JSON console
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new Serilog.Formatting.Json.JsonFormatter())
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 builder.Services.AddDbContext<CatalogDbContext>(opts =>
     opts.UseSqlServer(connectionString));
-// builder.Services.AddDbContext<CatalogDbContext>(opts =>
-//     opts.UseSqlServer(builder.Configuration.GetConnectionString("CatalogDb")));
 
 // HealthChecks
 builder.Services.AddHealthChecks()
@@ -85,6 +94,12 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSerilogRequestLogging();
+
+// Prometheus metrics middleware (/metrics)
+app.UseMetricServer();
+app.UseHttpMetrics();
+
 app.MapControllers();
 
 // endpoint for health checks
