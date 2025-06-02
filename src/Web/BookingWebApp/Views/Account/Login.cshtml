@@ -1,11 +1,12 @@
 @{
     ViewData["Title"]="Login";
 }
-<h2>Login</h2>
+<h2 class="text-center mb-4">Sign in</h2>
 @if(!ViewData.ModelState.IsValid){
-  <div class="alert alert-danger">@ViewData.ModelState[string.Empty]?.Errors.First().ErrorMessage</div>
+  <div class="alert alert-danger text-center mx-auto" style="max-width:380px;">
+    @ViewData.ModelState[string.Empty]?.Errors.First().ErrorMessage</div>
 }
-<form method="post" class="w-25">
+<form method="post" class="mx-auto" style="max-width:380px;">
   <div class="mb-3">
     <label class="form-label">Email</label>
     <input type="email" name="email" value="@ViewBag.Email" class="form-control" required />
@@ -14,5 +15,5 @@
     <label class="form-label">Password</label>
     <input type="password" name="password" class="form-control" required />
   </div>
-  <button class="btn btn-primary">Log in</button>
+  <button class="btn btn-primary d-block mx-auto" style="width:120px;">Sign in</button>
 </form> 

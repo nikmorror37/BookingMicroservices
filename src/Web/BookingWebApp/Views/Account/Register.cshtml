@@ -1,23 +1,57 @@
 @{
     ViewData["Title"]="Register";
 }
-<h2>Register</h2>
-<form method="post" class="w-25">
+<h2 class="text-center mb-4">Create an account</h2>
+<form method="post" class="needs-validation mx-auto" style="max-width:380px;" novalidate>
   <div class="mb-3">
     <label class="form-label">Email</label>
-    <input type="email" name="email" class="form-control" required />
+    <input type="email" name="email" class="form-control" required 
+    maxlength="255" pattern="^[A-Za-z0-9._%+-]+@@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$" />
+    <div class="invalid-feedback">
+        Enter a valid e-mail address (user@mail.com).
+    </div>
   </div>
   <div class="mb-3">
     <label class="form-label">Password</label>
-    <input type="password" name="password" class="form-control" required />
+    <input type="password" name="password" class="form-control" required
+    minlength="8" pattern="^(?=.*[A-Z])(?=.*\d)(?=.*[!#$%^&*]).{8,}$"/>
+    <div class="invalid-feedback">
+        Min 8 chars: 1 uppercase, 1 digit, 1 special (!#$%^&amp;*).
+    </div>
   </div>
   <div class="mb-3">
     <label class="form-label">First name</label>
-    <input type="text" name="firstName" class="form-control" required />
+    <input type="text" name="firstName" class="form-control" required maxlength="55" />
+    <div class="invalid-feedback">
+        First name is required (max 55 letters).
+    </div>
   </div>
   <div class="mb-3">
     <label class="form-label">Last name</label>
-    <input type="text" name="lastName" class="form-control" required />
+    <input type="text" name="lastName" class="form-control" required maxlength="55" />
+    <div class="invalid-feedback">
+        Last name is required (max 55 chars).
+    </div>
   </div>
-  <button class="btn btn-primary">Register</button>
+  <button class="btn btn-primary d-block mx-auto" style="width:120px;">Register</button>
 </form> 
+
+@section Scripts
+{
+    <!-- Bootstrap 5 client-validation -->
+    <script>
+        (() => {
+            'use strict';
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', evt => {
+                    if (!form.checkValidity()) {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
+}

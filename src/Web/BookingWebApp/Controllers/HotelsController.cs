@@ -16,7 +16,7 @@ public class HotelsController : Controller
     {
         try
         {
-            const int pageSize = 20;
+            const int pageSize = 4;
             var list = await _api.Hotels(new HotelFilter(search, minStars, maxDistance, page, pageSize));
 
             list = sort switch

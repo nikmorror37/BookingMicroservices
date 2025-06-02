@@ -6,7 +6,10 @@
     bool hasPrev = currentPage>1;
     bool hasNext = ViewBag.HasNext??false;
 }
-<h2 class="mb-3">My Bookings</h2>
+
+<h2 class="mb-3">
+    @(User.IsInRole("Admin") ? "Users Bookings" : "My Bookings")
+</h2>
 @if(!Model.Any()){
   <div class="alert alert-info">You have no bookings yet. <a asp-controller="Hotels" asp-action="Index">Search hotels</a></div>
 } else {

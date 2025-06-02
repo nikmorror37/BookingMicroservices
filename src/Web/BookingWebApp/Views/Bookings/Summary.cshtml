@@ -1,6 +1,8 @@
 @model BookingWebApp.Services.BookingDto
 @using BookingWebApp.Extensions
+@using BookingWebApp.Services
 @inject IConfiguration Config
+
 @{
     ViewData["Title"] = "Booking summary";
     var nights = Math.Max(1,(Model.CheckOut-Model.CheckIn).Days);
@@ -8,8 +10,17 @@
     var img = string.IsNullOrEmpty(Model.Hotel.ImageUrl)            
               ? "/img/placeholder-hotel.jpg"
               : Model.Hotel.ImageUrl.ToGatewayUrl(gateway);
-    //var img = string.IsNullOrEmpty(Model.Hotel.ImageUrl)? "/img/placeholder-hotel.jpg" : (Model.Hotel.ImageUrl.StartsWith("http")?Model.Hotel.ImageUrl : "http://localhost:8080"+Model.Hotel.ImageUrl);
     var total = Model.Room.Price * nights;
+
+    const string checkInTime  = "2:00 pm";
+    const string checkOutTime = "12:00 pm";
+
+    int persons = Model.Room.Type switch
+    {
+        RoomType.Single => 1,
+        RoomType.Double or RoomType.Twin => 2,
+        _ => Math.Max(3, Model.Room.Capacity)      
+    };
 }
 <h2 class="mb-4">Review your stay</h2>
 <div class="row g-5">
@@ -18,31 +29,88 @@
             <input type="hidden" name="id" value="@Model.Id" />
             <div class="mb-3">
                 <label class="form-label">First name</label>
-                <input name="FirstName" class="form-control" required />
+                <input name="FirstName"
+                    class="form-control"
+                    required
+                    minlength="2"
+                    maxlength="55"
+                    pattern="^[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż\-' ]{2,55}$" />
+                <div class="invalid-feedback">2-55 letters; Latin/Polish letters, space or "-" allowed.</div>
             </div>
             <div class="mb-3">
                 <label class="form-label">Last name</label>
-                <input name="LastName" class="form-control" required />
+                <input name="LastName"
+                    class="form-control"
+                    required
+                    minlength="2"
+                    maxlength="55"
+                    pattern="^[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż\-' ]{2,55}$" />
+                <div class="invalid-feedback">2-55 letters; Latin/Polish letters, space or "-" allowed.</div>
             </div>
             <div class="mb-3">
                 <label class="form-label">Email</label>
-                <input type="email" name="Email" class="form-control" required />
+                <input  type="email"
+                        name="Email"
+                        class="form-control"
+                        required
+                        maxlength="255"
+                        @* pattern not working *@
+                        pattern="^[A-Za-z0-9._%+-]+@@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}$" /> 
+                <div class="invalid-feedback">Enter a valid e-mail address (user@mail.com).</div>
             </div>
             <button class="btn btn-primary">Confirm and proceed to payment</button>
         </form>
+        <script>
+        (() => {
+        'use strict';
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(f =>
+            f.addEventListener('submit', e => {
+            if (!f.checkValidity()) { e.preventDefault(); e.stopPropagation(); }
+            f.classList.add('was-validated');
+            }));
+        })();
+        </script>
     </div>
+
     <aside class="col-lg-5">
         <div class="card shadow-sm">
             <img src="@img" class="card-img-top" style="height:200px;object-fit:cover;" />
+
             <div class="card-body">
-                <h5 class="card-title">@Model.Hotel.Name</h5>
-                <p class="card-text small text-muted">@Model.CheckIn.ToString("dd MMM yyyy") – @Model.CheckOut.ToString("dd MMM yyyy") (@nights night@(nights>1?"s":""))</p>
-                <p class="card-text mb-0">$@Model.Room.Price.ToString("0.00") <span class="text-muted small">/ night</span></p>
-                <p class="card-text mb-0">Type: <strong>@Model.Room.Type</strong></p>
-                <p class="card-text text-muted small">No breakfast included</p>
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                    <span class="fw-semibold">Total to pay:</span>
-                    <span class="h4 fw-bold mb-0">$@total.ToString("0.00")</span>
+                <h5 class="card-title mb-1">
+                    @Model.Hotel.Name @Model.Hotel.City
+                    <span class="text-warning small">
+                        @for (var i = 0; i < Model.Hotel.Stars; i++)
+                        { <span>&#9733;</span> }
+                    </span>
+                </h5>
+
+                <p class="card-text small text-muted mb-1">@Model.Hotel.Address</p>
+
+                <div class="row row-cols-2 g-1 small mb-2">
+                    <div class="col"><i class="bi bi-wifi text-success"></i> Wi-Fi</div>
+                    <div class="col"><i class="bi bi-cup-hot text-success"></i> Breakfast</div>
+                    <div class="col"><i class="bi bi-car-front text-success"></i> Parking</div>
+                    <div class="col"><i class="bi bi-snow text-success"></i> A/C</div>
+                </div>
+
+                <p class="card-text mb-2" style="font-size:0.85rem; white-space:nowrap; overflow-x:auto;">
+                    <strong>Check-in:</strong> @Model.CheckIn.ToString("dd MMM yyyy") @checkInTime &nbsp;–&nbsp;
+                    <strong>Check-out:</strong> @Model.CheckOut.ToString("dd MMM yyyy") @checkOutTime (@nights night@(nights>1?"s":""))
+                </p>
+
+                <div class="alert alert-success py-1 px-2 small text dark mb-2">
+                    You chose 1 @Model.Room.Type room for @persons person@(persons>1?"s":"").
+                </p>
+
+                <p class="card-text mb-2 text-dark">
+                    @nights night@(nights>1?"s":"") × $@Model.Room.Price.ToString("0.00") / night = $@total.ToString("0.00")
+                </p>
+
+                <div class="alert alert-light border-start border-success border-3 py-2 px-3 mb-0 d-flex justify-content-between align-items-center mt-2">
+                    <span class="h5 fw-semibold text-dark m-0">Total:</span>
+                    <span class="h5 fw-bold text-dark m-0">$@total.ToString("0.00")</span>
                 </div>
             </div>
         </div>

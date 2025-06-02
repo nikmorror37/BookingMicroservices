@@ -1,5 +1,6 @@
 @model BookingWebApp.Models.PaymentVm
 @using BookingWebApp.Extensions
+@using BookingWebApp.Services
 @inject IConfiguration Config
 @{
     ViewData["Title"] = "Payment";
@@ -25,18 +26,55 @@
     </div>
 }
 
-<div class="card mb-4">
-  <div class="row g-0">
+<div class="card mb-4 shadow-sm">
+  <div class="row g-0 align-items-stretch">
     <div class="col-md-4">
-      <img src="@img" class="img-fluid rounded-start" style="height:190px;object-fit:cover;width:100%" />
+      <img src="@img" class="img-fluid h-100 w-100 object-fit-cover" alt="@Model.Booking.Hotel.Name">
     </div>
     <div class="col-md-8">
       <div class="card-body">
-        <h5 class="card-title mb-1">@Model.Booking.Hotel.Name</h5>
-        <p class="card-text mb-1 text-muted">Room: <strong>@Model.Booking.Room.Type</strong> • #@Model.Booking.Room.Number</p>
-        <p class="card-text mb-1 text-muted">@Model.Booking.CheckIn.ToString("dd MMM yyyy") – @Model.Booking.CheckOut.ToString("dd MMM yyyy") (@nights night@(nights>1?"s":""))</p>
-        <p class="card-text mb-1">Price per night: <strong>$@price.ToString("0.00")</strong></p>
-        <h4 class="mt-2">Total: $@total.ToString("0.00")</h4>
+
+        <h5 class="card-title mb-1">
+          @Model.Booking.Hotel.Name @Model.Booking.Hotel.City
+          <span class="text-warning small ms-2">
+            @for(int i = 0; i < Model.Booking.Hotel.Stars; i++)
+            { <i class="bi bi-star-fill"></i> }
+          </span>
+        </h5>
+
+        <p class="card-text small text-muted mb-2">
+          Room: <strong>@Model.Booking.Room.Type</strong> &bull; #@Model.Booking.Room.Number
+        </p>
+
+        <p class="card-text small text-muted mb-3">@Model.Booking.Hotel.Address</p>
+
+        <div class="d-flex flex-wrap gap-2 mb-3 small">
+          <div class="text-success"><i class="bi bi-wifi"></i> Wi-Fi</div>
+          <div class="text-success"><i class="bi bi-cup-hot"></i> Breakfast</div>
+          <div class="text-success"><i class="bi bi-car-front"></i> Parking</div>
+          <div class="text-success"><i class="bi bi-snow"></i> A/C</div>
+        </div>
+
+        <div class="d-flex align-items-center mb-3 small text-nowrap" style="font-size:0.85rem;">
+          <i class="bi bi-calendar-event me-2"></i>
+          <strong>Check-in:&nbsp;</strong> @Model.Booking.CheckIn.ToString("dd MMM yyyy") 2:00 pm&nbsp;&ndash;&nbsp;
+          <strong>Check-out:&nbsp;</strong> @Model.Booking.CheckOut.ToString("dd MMM yyyy") 12:00 pm
+          (@nights night@(nights>1?"s":""))
+        </div>
+        <hr />
+
+        <h5 class="mt-4 mb-2">Price Details</h5>
+        <p class="card-text mb-2 text-dark">
+          Price per night × Duration of stay = 
+          $@price.ToString("0.00") × @nights night@(nights>1?"s":"") = 
+          $@total.ToString("0.00")
+        </p>
+
+        <div class="border border-success-subtle rounded-2 d-flex
+            justify-content-between align-items-center px-3 py-2 mt-3 bg-light">
+          <span class="h5 fw-semibold text-dark m-0">Total</span>
+          <span class="h5 fw-bold text-dark m-0">$@total.ToString("0.00")</span>
+        </div>
       </div>
     </div>
   </div>
@@ -183,7 +221,7 @@
     })();
   </script>
   <script>
-  /* ------------ helpers ------------ */
+
   function luhnValid(num){
       num = num.replace(/\D/g,'');
       let sum = 0, dbl = false;
@@ -209,7 +247,7 @@
           default:     return '';
       }
   }
-  /* ------------ live validation & icon ------------ */
+ 
   (() => {
     const inp   = document.getElementById('cardNumber');
     const icon  = document.getElementById('cardIcon');
@@ -229,7 +267,6 @@
             cvv.placeholder = '123';
         }
 
-        // bootstrap validation style toggle
         if(num.length>=13){
             inp.setCustomValidity(luhnValid(num)? '' : 'invalid');
         }else{

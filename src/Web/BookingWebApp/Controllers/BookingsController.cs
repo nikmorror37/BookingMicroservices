@@ -59,7 +59,7 @@ public class BookingsController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(int page=1)
     {
-        const int pageSize = 10;
+        const int pageSize = 9;
         try
         {
             var list = await _api.MyBookings(page,pageSize);

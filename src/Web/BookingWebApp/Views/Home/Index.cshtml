@@ -2,11 +2,58 @@
     ViewData["Title"] = "Home Page";
 }
 
-<section class="py-5 text-center bg-light" style="background-image:url('/img/hero.jpg'); background-size:cover; background-position:center;">
-  <div class="container py-5" style="backdrop-filter:brightness(0.8)">
-     <h1 class="display-4 fw-bold text-white mb-4">Find your next stay</h1>
-     <div class="mx-auto" style="max-width:900px;">
-        @await Html.PartialAsync("_SearchBar")
-     </div>
-  </div>
+<style>
+    .full-bleed {
+        width: 100vw;          
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;    
+        margin-right: -50vw;   
+    }
+</style>
+
+<section class="full-bleed py-5 text-center"         
+         style="background:url('/img/hero.jpg') center/cover no-repeat;">
+    <div class="container py-5" style="backdrop-filter:brightness(.8);">
+        <h1 class="display-4 fw-bold text-white mb-4">Find your next stay</h1>
+
+        <div class="mx-auto" style="max-width:900px;">
+            @await Html.PartialAsync("_SearchBar")
+        </div>
+    </div>
+</section>
+
+<section class="bg-light py-5">
+    <div class="container">
+        <h2 class="h4 text-center mb-5">Why BookingWebApp?</h2>
+
+        <div class="row text-center g-4">
+
+            <div class="col-6 col-md-3">
+                <i class="bi bi-cash-coin fs-1 text-primary"></i>
+                <h6 class="mt-3 mb-0">Lowest price</h6>
+                <p class="small text-muted">Price-match guarantee on all rooms.</p>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <i class="bi bi-headset fs-1 text-primary"></i>
+                <h6 class="mt-3 mb-0">24/7 support</h6>
+                <p class="small text-muted">We are here whenever you need us.</p>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <i class="bi bi-arrow-counterclockwise fs-1 text-primary"></i>
+                <h6 class="mt-3 mb-0">Free cancellation</h6>
+                <p class="small text-muted">Most rooms cancel for free.</p>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <i class="bi bi-shield-lock fs-1 text-primary"></i>
+                <h6 class="mt-3 mb-0">Secure payments</h6>
+                <p class="small text-muted">Your data is always protected.</p>
+            </div>
+
+        </div>
+    </div>
 </section>
