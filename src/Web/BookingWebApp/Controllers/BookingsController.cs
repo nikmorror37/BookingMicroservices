@@ -57,19 +57,33 @@ public class BookingsController : Controller
 
     // GET /Bookings
     [HttpGet]
-    public async Task<IActionResult> Index(int page=1)
+    public async Task<IActionResult> Index(int page = 1)
     {
         const int pageSize = 9;
+        const int fetchSize = pageSize + 1;
         try
         {
-            var list = await _api.MyBookings(page,pageSize);
+            var items = await _api.MyBookings(page, fetchSize);
+
+            if (page > 1 && !items.Any())
+                return RedirectToAction(nameof(Index), new { page = page - 1 });
+
+            bool hasNext = items.Count > pageSize;
+
+            var list = items.Take(pageSize).ToList();
+            
             ViewBag.Page = page;
-            ViewBag.HasNext = list.Count==pageSize;
+            ViewBag.HasNext = hasNext;
             return View(list);
         }
-        catch(ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            return RedirectToAction("Login","Account");
+            return RedirectToAction("Login", "Account");
+        }
+        catch (Exception) 
+        {
+            TempData["Error"] = "An unexpected error occurred while fetching your bookings. Please try again.";
+            return View(new List<BookingDto>()); 
         }
     }
 

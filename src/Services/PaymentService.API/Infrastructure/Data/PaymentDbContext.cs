@@ -19,7 +19,6 @@ namespace PaymentService.API.Infrastructure.Data
 
 			b.Property(p => p.Amount)
 			 .HasColumnType("decimal(18,4)")
-			 //.HasPrecision(18, 4)
 			 .IsRequired();
 		});
         }

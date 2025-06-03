@@ -9,8 +9,6 @@ namespace RoomService.API.Domain.Models
         public decimal Price { get; set; }                     
         public string? Description { get; set; }               
         public bool IsAvailable { get; set; }
-        
-        // new fields
         public string? RoomImageUrl   { get; set; }
         public int     NumberOfBeds   { get; set; }
         public int     Capacity       { get; set; }                  

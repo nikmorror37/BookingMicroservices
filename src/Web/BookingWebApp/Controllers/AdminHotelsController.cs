@@ -39,7 +39,6 @@ public class AdminHotelsController : Controller
 
         if (image != null && image.Length > 0)
         {
-            //var res = await _api.UploadImage(image);
             var res = await _api.UploadImage(image, id);
             vm.ImageUrl = res.ImageUrl;
         }
@@ -64,21 +63,18 @@ public class AdminHotelsController : Controller
     {
         if (!ModelState.IsValid) return View("Create", vm);
 
-        // 1. создаём отель без ImageUrl
+        // create hotel without ImageUrl
         var created = await _api.CreateHotel(
             new HotelUpdateRequest(0, vm.Name, vm.Address, vm.City, vm.Country,
                                vm.Stars, vm.DistanceFromCenter, null, vm.Description));
 
         if (image != null && image.Length > 0)
         {
-            //var res = await _api.UploadImage(image);
             var res = await _api.UploadImage(image, created.Id);
-            //vm.ImageUrl = res.ImageUrl;
             await _api.UpdateHotel(created.Id,
             new HotelUpdateRequest(created.Id, vm.Name, vm.Address, vm.City, vm.Country,
                                    vm.Stars, vm.DistanceFromCenter, res.ImageUrl, vm.Description));
         }
-        //await _api.CreateHotel(new HotelUpdateRequest(0, vm.Name, vm.Address, vm.City, vm.Country, vm.Stars, vm.DistanceFromCenter, vm.ImageUrl, vm.Description));
         return RedirectToAction("Index");
     }
 
@@ -89,24 +85,23 @@ public class AdminHotelsController : Controller
         return RedirectToAction("Index");
     }
     
-    // НОВЫЙ метод для загрузки дополнительных изображений через AJAX
+    // method for loading additional images via AJAX
     [HttpPost("{id}/UploadImages")]
     public async Task<IActionResult> UploadImages(int id, List<IFormFile> files)
     {
-        // Проверяем, что файлы были переданы
+        // check that the files have been transferred
         if (files == null || files.Count == 0)
             return BadRequest("No files uploaded");
 
         try
         {
-            // Вызываем API для загрузки изображений в папку отеля
+            // call API to upload images to the hotel folder
             var result = await _api.UploadAdditionalImages(id, files);
-            // Возвращаем успешный результат с URL загруженных изображений
+
             return Ok(result);
         }
         catch (Exception ex)
         {
-            // В случае ошибки возвращаем BadRequest с сообщением
             return BadRequest(ex.Message);
         }
     }

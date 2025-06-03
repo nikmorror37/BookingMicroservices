@@ -63,8 +63,6 @@ builder.Services.AddCors(options =>
         .AllowAnyHeader());
 });
 
-//builder.Services.AddHealthChecks();
-
 // Enhanced HealthChecks to check all services
 builder.Services.AddHealthChecks()
     .AddUrlGroup(new Uri("http://catalogservice/health"), 
@@ -112,9 +110,6 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
-// Middleware
-// REMOVE app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -130,14 +125,6 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-// if (app.Environment.IsDevelopment())
-// {
-//     app.UseSwagger();             
-//     app.UseSwaggerUI(c =>
-//     {
-//         c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Gateway v1");
-//     });
-// }
 
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -153,8 +140,6 @@ app.MapReverseProxy(proxyPipeline =>
     });
 });
 
-// health checks
-//app.MapHealthChecks("/health");
 
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {

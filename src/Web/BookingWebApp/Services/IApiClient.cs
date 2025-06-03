@@ -27,12 +27,8 @@ public interface IApiClient
     // profile
     [Put("/api/account/me")] Task EditProfile([Body] UpdateProfileRequest req);
 
-    //[Post("/api/images")] Task<ImageUploadResponse> UploadImage(IFormFile file);
     Task<ImageUploadResponse> UploadImage(IFormFile file, int? hotelId = null);
 
-    // НОВЫЙ метод для загрузки дополнительных изображений отеля
-    // Использовали атрибут Refit для указания HTTP метода и маршрута, но
-    // Убрали Refit атрибуты, так как мы используем ручную реализацию в ApiClient
     Task<UploadAdditionalImagesResponse> UploadAdditionalImages(int hotelId, List<IFormFile> files);
 
     Task<ImageUploadResponse> UploadRoomImage(IFormFile file, int hotelId, string roomNumber, RoomType type);
@@ -53,7 +49,7 @@ public record LoginResponse(string Token);
 public record RegisterRequest(string Email,string Password,string FirstName,string LastName);
 public record UserDto(string Email,string FirstName,string LastName,string? Address,string? City,string? State,string? PostalCode,string? Country,DateTime? DateOfBirth);
 
-public record HotelFilter(string? Search,int? MinStars,double? MaxDistance,int Page=1,int PageSize=20);
+public record HotelFilter(string? Search,int? MinStars,double? MaxDistance,int Page=1,int PageSize=20, string? Sort = null);
 
 public enum RoomType{Single,Double,Twin,Suite}
 public record RoomDto(int Id,int HotelId,string Number,RoomType Type,decimal Price,string? Description,bool IsAvailable,string? RoomImageUrl,int NumberOfBeds,int Capacity);
@@ -79,7 +75,6 @@ public record UpdateProfileRequest(string? FirstName,string? LastName,string? Ad
 
 public record ImageUploadResponse(string ImageUrl);
 
-// НОВЫЙ record для ответа от сервера с URL загруженных изображений
 public record UploadAdditionalImagesResponse(List<string> ImageUrls);
 
 public record HotelUpdateRequest(int Id, string Name, string Address, string City, string Country, int Stars, double DistanceFromCenter, string? ImageUrl, string? Description);

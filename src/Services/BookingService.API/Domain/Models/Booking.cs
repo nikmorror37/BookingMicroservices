@@ -9,8 +9,6 @@ namespace BookingService.API.Domain.Models
     public DateTime CheckOut { get; set; }
     public string UserId { get; set; } = null!;
     public BookingStatus Status { get; set; }
-
-    //new
     public int? PaymentId  { get; set; }
     public bool IsCanceled { get; set; } = false;
     public DateTime? CanceledAt { get; set; }

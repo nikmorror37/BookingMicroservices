@@ -34,6 +34,7 @@ namespace CatalogService.API.Controllers
             [FromQuery] string? search = null,
             [FromQuery] int? minStars = null,
             [FromQuery] string? maxDistance = null,
+            [FromQuery] string? sort = null, //add sort parameter
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -92,13 +93,30 @@ namespace CatalogService.API.Controllers
                 query = query.Where(h => h.DistanceFromCenter <= maxDist.Value);
             }
 
+            // using sorting BEFORE pagination
+            switch (sort?.ToLowerInvariant()) 
+            {
+                case "stars_desc":
+                    query = query.OrderByDescending(h => h.Stars).ThenBy(h => h.Name);
+                    break;
+                case "stars_asc":
+                    query = query.OrderBy(h => h.Stars).ThenBy(h => h.Name);
+                    break;
+                case "name":
+                    query = query.OrderBy(h => h.Name);
+                    break;
+                default: 
+                    query = query.OrderBy(h => h.Name);
+                    break;
+            }
+
             // total number (for front-line pagination)
             var totalCount = await query.CountAsync();
             Response.Headers.Add("X-Total-Count", totalCount.ToString());
 
             // apply sorting, paining and execute the request
             var hotels = await query
-                .OrderBy(h => h.Name)
+                //.OrderBy(h => h.Name)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -117,27 +135,17 @@ namespace CatalogService.API.Controllers
         }
 
         /// POST api/hotels
-        // [HttpPost]
-        // [Authorize(Roles = "Admin")]
-        // public async Task<ActionResult<Hotel>> Create([FromBody] Hotel hotel)
-        // {
-        //     _context.Hotels.Add(hotel);
-        //     await _context.SaveChangesAsync();
-        //     return CreatedAtAction(nameof(GetById), new { id = hotel.Id }, hotel);
-        // }
-
-        /// POST api/hotels
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Hotel>> Create([FromBody] Hotel hotel)
         {
-            // Добавляем отель в контекст БД
+            // Add the hotel to the database context
             _context.Hotels.Add(hotel);
-            // Сохраняем в БД, чтобы получить сгенерированный ID
+            // Save to the database to get the generated ID
             await _context.SaveChangesAsync();
 
-            // НОВЫЙ КОД: Создаем папку для изображений нового отеля
-            // Формируем имя папки из названия отеля, убирая спецсимволы
+            // Create a folder for images of the new hotel
+            // Generate the folder name from the hotel name, removing wildcards (spec symbols)
             var folderName = hotel.Name
                 .Replace(" ", "")
                 .Replace("'", "")
@@ -146,16 +154,15 @@ namespace CatalogService.API.Controllers
                 .Replace(",", "")
                 .Replace("-", "");
 
-            // Получаем путь к папке Images и добавляем имя папки отеля
+            // Get the path to the Images folder and add the name of the hotel folder
             var hotelFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images", folderName);
 
-            // Создаем папку, если она еще не существует
             if (!Directory.Exists(hotelFolderPath))
             {
                 Directory.CreateDirectory(hotelFolderPath);
             }
 
-            // Возвращаем созданный отель с указанием местоположения в заголовке
+            // Return the created hotel with the location in the header
             return CreatedAtAction(nameof(GetById), new { id = hotel.Id }, hotel);
         }
 
@@ -214,8 +221,6 @@ namespace CatalogService.API.Controllers
             if (!hotelFolderMap.TryGetValue(id, out var folderName))
             {
                 folderName = NormalizeFolderName(hotel.Name);
-                //If there is no mapping, try to find a folder by the name of the hotel
-                // folderName = hotel.Name.Replace(" ", "").Replace("Styles", "").Replace("Centrum", "").Replace("City", "");
             }
 
             //Path to specific hotel folder 
@@ -227,7 +232,6 @@ namespace CatalogService.API.Controllers
                 var validExt = new[] { ".jpg", ".jpeg", ".png", ".gif" };
 
                 var hotelImages = Directory.EnumerateFiles(hotelImagesPath)
-                //var hotelImages = Directory.GetFiles(hotelImagesPath, "*.jpg")
                     .Where(f =>
                     {
                         var ext = Path.GetExtension(f).ToLower();
@@ -244,7 +248,6 @@ namespace CatalogService.API.Controllers
 
                         // сheck if it's the main image (case-insensitive comparison)
                         bool isMainImage = !string.IsNullOrEmpty(hotel.ImageUrl) &&
-                                          //fullPath.Equals(hotel.ImageUrl, StringComparison.OrdinalIgnoreCase);
                                            fullPath == hotel.ImageUrl.ToLower();
                                            
                         return !isRoomImage && !isMainImage;

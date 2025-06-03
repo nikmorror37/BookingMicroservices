@@ -17,22 +17,21 @@ public class HotelsController : Controller
         try
         {
             const int pageSize = 4;
-            var list = await _api.Hotels(new HotelFilter(search, minStars, maxDistance, page, pageSize));
+            var list = await _api.Hotels(new HotelFilter(search, minStars, maxDistance, page, pageSize, sort));
 
-            list = sort switch
-            {
-                "stars_desc" => list.OrderByDescending(h => h.Stars).ToList(),
-                "stars_asc" => list.OrderBy(h => h.Stars).ToList(),
-                "name" => list.OrderBy(h => h.Name).ToList(),
-                _ => list
-            };
+            if (page > 1 && list.Count == 0)
+            return RedirectToAction(nameof(Index),
+                new { search, minStars, maxDistance, sort, page = page - 1 });
+
+            var nextPage = await _api.Hotels(new HotelFilter(search, minStars, maxDistance, page + 1, 1, sort));
+            bool hasNext = nextPage.Any();
 
             ViewBag.CurrentSearch = search;
             ViewBag.CurrentMinStars = minStars;
             ViewBag.CurrentMaxDistance = maxDistance;
             ViewBag.CurrentSort = sort;
             ViewBag.Page = page;
-            ViewBag.HasNext = list.Count() == pageSize;
+            ViewBag.HasNext = hasNext;
             return View(list);
         }
         catch (HttpRequestException)
@@ -85,14 +84,14 @@ public class HotelsController : Controller
         return View(vm);
     }
     
-    // НОВЫЙ метод для получения изображений отеля через AJAX
-    // Используется в админке для отображения существующих изображений
+    // retrieve hotel images via AJAX
+    // used in admin dashboard to display existing images
     [HttpGet("GetImages/{id}")]
     public async Task<IActionResult> GetImages(int id)
     {
-        // Вызываем API для получения списка изображений отеля
+        // call the API to get a list of hotel images
         var images = await _api.GetHotelImagesAsync(id);
-        // Возвращаем список как JSON для JavaScript
+        // return the list as JSON for JS
         return Json(images);
     }
 } 

@@ -39,7 +39,6 @@ public class AdminRoomsController:Controller
 
         if (image != null && image.Length > 0)
         {
-            //var res = await _api.UploadImage(image);
             var res = await _api.UploadRoomImage(
             image,           // file
             vm.HotelId,      
@@ -71,7 +70,6 @@ public class AdminRoomsController:Controller
         }
         if (image != null && image.Length > 0)
         {
-            //var res = await _api.UploadImage(image);
             var res = await _api.UploadRoomImage(image, vm.HotelId, vm.Number, vm.Type);
             vm.RoomImageUrl = res.ImageUrl;
         }

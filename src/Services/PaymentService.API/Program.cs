@@ -35,8 +35,6 @@ builder.Services.AddHealthChecks()
 //Register client to bank gateway
 builder.Services.AddScoped<IPaymentGatewayClient, PaymentGatewayClient>();
 
-//JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-
 //JWT Auth
 builder.Services
   .AddAuthentication(options => {

@@ -39,11 +39,13 @@ public class ApiClient : IApiClient
 
         var query = new StringBuilder($"api/hotels?page={filter.Page}&pageSize={filter.PageSize}");
         if (!string.IsNullOrEmpty(filter.Search))
-            query.Append($"&search={filter.Search}");
+            query.Append($"&search={Uri.EscapeDataString(filter.Search)}");
         if (filter.MinStars.HasValue)
             query.Append($"&minStars={filter.MinStars}");
         if (filter.MaxDistance.HasValue)
             query.Append($"&maxDistance={filter.MaxDistance}");
+        if (!string.IsNullOrEmpty(filter.Sort)) // add sort parameter in query
+            query.Append($"&sort={Uri.EscapeDataString(filter.Sort)}");
 
         var response = await _client.GetAsync(query.ToString());
         response.EnsureSuccessStatusCode();
@@ -179,22 +181,6 @@ public class ApiClient : IApiClient
         var response = await _client.PutAsync("api/account/me", new StringContent(JsonSerializer.Serialize(req), Encoding.UTF8, "application/json"));
         response.EnsureSuccessStatusCode();
     }
-
-    // public async Task<ImageUploadResponse> UploadImage(IFormFile file)
-    // {
-    //     await SetAuthHeader();
-    //     using var ms = new MemoryStream();
-    //     await file.CopyToAsync(ms);
-    //     ms.Position = 0;
-    //     var content = new MultipartFormDataContent();
-    //     var fileContent = new ByteArrayContent(ms.ToArray());
-    //     fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
-    //     content.Add(fileContent, "file", file.FileName);
-    //     var response = await _client.PostAsync("/api/images", content);
-    //     response.EnsureSuccessStatusCode();
-    //     var json = await response.Content.ReadAsStringAsync();
-    //     return JsonSerializer.Deserialize<ImageUploadResponse>(json, _jsonOptions) ?? throw new Exception("Cannot deserialize image response");
-    // }
     
     public async Task<ImageUploadResponse> UploadImage(IFormFile file, int? hotelId = null)
     {
@@ -208,7 +194,7 @@ public class ApiClient : IApiClient
         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
         content.Add(fileContent, "file", file.FileName);
         
-        // Добавляем hotelId в URL если указан
+        // add hotelId to URL if specified
         var url = hotelId.HasValue ? $"/api/images?hotelId={hotelId}" : "/api/images";
         
         var response = await _client.PostAsync(url, content);
@@ -217,41 +203,39 @@ public class ApiClient : IApiClient
         return JsonSerializer.Deserialize<ImageUploadResponse>(json, _jsonOptions) ?? throw new Exception("Cannot deserialize image response");
     }
 
-    // НОВЫЙ метод для загрузки дополнительных изображений в папку отеля
     public async Task<UploadAdditionalImagesResponse> UploadAdditionalImages(int hotelId, List<IFormFile> files)
     {
-        // Устанавливаем JWT токен для авторизации запроса
         await SetAuthHeader();
 
-        // Создаем multipart/form-data контент для передачи файлов
+        // create multipart/form-data content for file transfer
         using var content = new MultipartFormDataContent();
 
-        // Обрабатываем каждый файл из списка
+        // process each file in the list
         foreach (var file in files)
         {
-            // Создаем поток памяти для временного хранения файла
+            // create a memory stream to temporarily store the file
             using var ms = new MemoryStream();
-            // Копируем содержимое файла в поток
+            // copy the contents of the file to the stream
             await file.CopyToAsync(ms);
-            // Возвращаем указатель потока в начало
+            // return the stream pointer to the beginning
             ms.Position = 0;
 
-            // Создаем контент из массива байтов файла
+            // create content from the byte array of the file
             var fileContent = new ByteArrayContent(ms.ToArray());
-            // Устанавливаем правильный Content-Type для файла
+            // set the correct Content-Type for the file
             fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
-            // Добавляем файл в multipart контент с именем "files" (должно совпадать с параметром на сервере)
+            // add the file to the multipart content with the name "files" (must match the parameter on the server)
             content.Add(fileContent, "files", file.FileName);
         }
 
-        // Отправляем POST запрос на сервер
+        // send POST request to the server
         var response = await _client.PostAsync($"/api/images/hotel/{hotelId}/additional", content);
-        // Проверяем успешность запроса, иначе выбросит исключение
+        // check if the request is successful, otherwise it will throw an exception
         response.EnsureSuccessStatusCode();
 
-        // Читаем JSON ответ от сервера
+        // read JSON response from the server
         var json = await response.Content.ReadAsStringAsync();
-        // Десериализуем ответ в объект UploadAdditionalImagesResponse
+        // deserialise the response into an UploadAdditionalImagesResponse object
         return JsonSerializer.Deserialize<UploadAdditionalImagesResponse>(json, _jsonOptions)
             ?? new UploadAdditionalImagesResponse(new List<string>());
     }

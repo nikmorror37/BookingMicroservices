@@ -47,20 +47,17 @@
   </div>
 </form>
 
-@* НОВАЯ секция для загрузки дополнительных изображений - показываем только при редактировании *@
 @if (!isCreate)
 {
     <hr class="my-4" />
     <h5>Additional Hotel Images</h5>
     
-    @* Контейнер для отображения существующих дополнительных изображений *@
     <div id="additionalImagesGallery" class="mb-3">
         <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
     </div>
     
-    @* Форма для загрузки новых дополнительных изображений *@
     <div class="mb-3">
         <label class="form-label">Upload New Images</label>
         <input type="file" id="additionalImagesInput" class="form-control" accept="image/*" multiple />
@@ -70,38 +67,33 @@
     </div>
 
     <script>
-        // Функция загружается при полной загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            // Загружаем существующие изображения отеля
             loadHotelImages();
         });
 
-        // Функция для загрузки и отображения существующих изображений отеля
         function loadHotelImages() {
-            // Делаем запрос к API для получения списка изображений
+            // make a request to the API to get the list of images
             fetch('/Hotels/GetImages/@Model.Id')
                 .then(response => response.json())
                 .then(images => {
-                    // Находим контейнер для изображений
+                    // finding the image container
                     const container = document.getElementById('additionalImagesGallery');
-                    // Очищаем контейнер
+                    // clean container
                     container.innerHTML = '';
                     
-                    // Если есть изображения, отображаем их
+                    // if there are images display them
                     if (images && images.length > 1) {
-                        // Создаем заголовок
                         const title = document.createElement('p');
                         title.className = 'text-muted mb-2';
                         title.textContent = 'Current additional images:';
                         container.appendChild(title);
                         
-                        // Создаем контейнер для изображений
+                        // create container for images
                         const imagesDiv = document.createElement('div');
                         imagesDiv.className = 'd-flex flex-wrap gap-2';
                         
-                        // Пропускаем первое изображение (главное) и отображаем остальные
+                        // Skip the first image (main image) and display the others
                         images.slice(1).forEach((imgUrl, index) => {
-                            // Создаем элемент изображения
                             const img = document.createElement('img');
                             img.src = imgUrl;
                             img.style.maxHeight = '100px';
@@ -113,12 +105,11 @@
                         
                         container.appendChild(imagesDiv);
                     } else {
-                        // Если нет дополнительных изображений, показываем сообщение
+                        // If no additional images, show a message
                         container.innerHTML = '<p class="text-muted">No additional images uploaded yet.</p>';
                     }
                 })
                 .catch(error => {
-                    // In case случае ошибки показываем сообщение
                     console.error('Error loading images:', error);
                     const container = document.getElementById('additionalImagesGallery');
                     container.innerHTML = '<p class="text-danger">Error loading images.</p>';
@@ -126,57 +117,47 @@
         }
 
         
-        // Функция для загрузки новых дополнительных изображений
-        function uploadAdditionalImages(event) {  // Добавляем параметр event
-            // Получаем элемент input with файлами
+        function uploadAdditionalImages(event) {
             const input = document.getElementById('additionalImagesInput');
             const files = input.files;
             
-            // Проверяем, что файлы выбраны
             if (files.length === 0) {
                 alert('Please select images to upload');
                 return;
             }
 
-            // Создаем FormData для отправки файлов
+            // Create FormData for sending files
             const formData = new FormData();
-            // Добавляем каждый файл в FormData
+            // Add each file to FormData
             for (let i = 0; i < files.length; i++) {
                 formData.append('files', files[i]);
             }
 
-            // Показываем индикатор загрузки
             const button = event.target;
             button.disabled = true;
             button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
 
-            // Отправляем файлы на сервер
+            // sending files to the server
             fetch('/Admin/Hotels/@Model.Id/UploadImages', {
                 method: 'POST',
                 body: formData
             })
             .then(response => {
-                // Проверяем успешность ответа
                 if (!response.ok) {
                     throw new Error('Upload failed');
                 }
                 return response.json();
             })
             .then(data => {
-                // При успешной загрузке показываем сообщение
                 alert('Images uploaded successfully!');
-                // Очищаем input
                 input.value = '';
-                // Перезагружаем галерею изображений
                 loadHotelImages();
             })
             .catch(error => {
-                // При ошибке показываем сообщение
                 console.error('Error:', error);
                 alert('Error uploading images. Please try again.');
             })
             .finally(() => {
-                // Восстанавливаем кнопку
                 button.disabled = false;
                 button.innerHTML = '<i class="bi bi-upload"></i> Upload Images';
             });

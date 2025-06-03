@@ -267,7 +267,6 @@ namespace BookingService.API.Controllers
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        // extract your user as in your other methods
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                   ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 

@@ -20,32 +20,6 @@ namespace CatalogService.API.Controllers
             _context = context;
         }
 
-        // [HttpPost]
-        // [Authorize(Roles = "Admin")]
-        // public async Task<IActionResult> UploadImage(IFormFile file)
-        // {
-        //     if (file == null || file.Length == 0)
-        //         return BadRequest("No file uploaded");
-
-        //     // Validate file is an image
-        //     var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        //     if (extension != ".jpg" && extension != ".jpeg" && extension != ".png" && extension != ".gif")
-        //         return BadRequest("Invalid file type. Only images (.jpg, .jpeg, .png, .gif) are allowed.");
-
-        //     // Create unique filename
-        //     var fileName = $"{Guid.NewGuid()}{extension}";
-        //     var filePath = Path.Combine(_environment.ContentRootPath, "Images", fileName);
-
-        //     using (var stream = new FileStream(filePath, FileMode.Create))
-        //     {
-        //         await file.CopyToAsync(stream);
-        //     }
-
-        //     // Return the URL to the uploaded image
-        //     var imageUrl = $"/images/{fileName}";
-        //     return Ok(new { ImageUrl = imageUrl });
-        // }
-
         private static string NormalizeFolderName(string text)
         => Regex.Replace(text, "[^A-Za-z0-9]", "");
 
@@ -64,14 +38,13 @@ namespace CatalogService.API.Controllers
             string filePath;
             string imageUrl;
 
-            // Если указан hotelId, сохраняем в папку отеля
             if (hotelId.HasValue && hotelId.Value > 0)
             {
                 var hotel = await _context.Hotels.FindAsync(hotelId.Value);
                 if (hotel == null)
                     return NotFound("Hotel not found");
 
-                // Используем ту же логику определения папки, что и в UploadAdditionalImages
+                // use the same logic for defining the folder as in UploadAdditionalImages
                 var hotelFolderMap = new Dictionary<int, string>
                 {
                     { 1, "HiltonWarsaw" },
@@ -85,12 +58,6 @@ namespace CatalogService.API.Controllers
                 if (!hotelFolderMap.TryGetValue(hotelId.Value, out folderName))
                 {
                     folderName = NormalizeFolderName(hotel.Name);
-                    // folderName = hotel.Name
-                    //     .Replace(" ", "")
-                    //     .Replace("'", "")
-                    //     .Replace(".", "")
-                    //     .Replace(",", "")
-                    //     .Replace("-", "");
                 }
 
                 var hotelFolderPath = Path.Combine(_environment.ContentRootPath, "Images", folderName);
@@ -99,13 +66,11 @@ namespace CatalogService.API.Controllers
                     Directory.CreateDirectory(hotelFolderPath);
                 }
 
-                // Для главного фото используем понятное имя
                 var baseFileName = folderName.ToLower();
                 fileName = $"{baseFileName}_main{extension}";
                 filePath = Path.Combine(hotelFolderPath, fileName);
 
-                // Если файл уже существует, добавляем timestamp
-                if (System.IO.File.Exists(filePath))  // Используем полное имя пространства имен
+                if (System.IO.File.Exists(filePath)) 
                 {
                     fileName = $"{baseFileName}_main_{DateTime.Now:yyyyMMddHHmmss}{extension}";
                     filePath = Path.Combine(hotelFolderPath, fileName);
@@ -115,7 +80,7 @@ namespace CatalogService.API.Controllers
             }
             else
             {
-                // Для загрузок без hotelId используем GUID в корне (обратная совместимость)
+                // for downloads without hotelId is used the GUID in the root (backwards compatibility)
                 fileName = $"{Guid.NewGuid()}{extension}";
                 filePath = Path.Combine(_environment.ContentRootPath, "Images", fileName);
                 imageUrl = $"/images/{fileName}";
@@ -130,22 +95,20 @@ namespace CatalogService.API.Controllers
         }
 
 
-        // НОВЫЙ метод для загрузки дополнительных фото в папку конкретного отеля
+        // method for uploading additional photos to a specific hotel's folder
         [HttpPost("hotel/{hotelId}/additional")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UploadAdditionalImages(int hotelId, List<IFormFile> files)
         {
-            // Проверяем, что файлы переданы
             if (files == null || files.Count == 0)
                 return BadRequest("No files uploaded");
 
-            // Находим отель в базе данных, чтобы получить его имя
             var hotel = await _context.Hotels.FindAsync(hotelId);
             if (hotel == null)
                 return NotFound("Hotel not found");
 
-            // Словарь для маппинга ID существующих отелей на имена их папок
-            // Это нужно для совместимости с уже существующими папками seed-отелей
+            // Dictionary for mapping IDs of existing hotels to their folder names
+            // This is needed for compatibility with already existing seed hotel folders
             var hotelFolderMap = new Dictionary<int, string>
             {
                 { 1, "HiltonWarsaw" },
@@ -156,66 +119,49 @@ namespace CatalogService.API.Controllers
             };
 
             string folderName;
-            // Если это один из seed-отелей, используем существующее имя папки
             if (!hotelFolderMap.TryGetValue(hotelId, out folderName))
             {
                 folderName = NormalizeFolderName(hotel.Name);
-                // Для новых отелей создаем имя папки из названия отеля
-                // Убираем пробелы и спецсимволы для безопасности файловой системы
-                // folderName = hotel.Name
-                //     .Replace(" ", "")
-                //     .Replace("'", "")
-                //     .Replace(".", "")
-                //     .Replace(",", "")
-                //     .Replace("-", "");
             }
 
-            // Формируем полный путь к папке отеля
+            // form the full path to the hotel folder
             var hotelFolderPath = Path.Combine(_environment.ContentRootPath, "Images", folderName);
 
-            // Создаем папку, если она не существует (для новых отелей)
             if (!Directory.Exists(hotelFolderPath))
             {
                 Directory.CreateDirectory(hotelFolderPath);
             }
 
-            // Список URL загруженных изображений для возврата клиенту
             var uploadedUrls = new List<string>();
 
-            // Находим количество уже существующих дополнительных фото в папке
-            // Ищем файлы с паттерном "hotel-*.jpg" чтобы правильно пронумеровать новые
+            // Find the number of already existing additional photos in the folder
+            // Look for files with the pattern "hotel-*.jpg" to correctly number the new ones
             var existingAdditionalPhotos = Directory.GetFiles(hotelFolderPath, $"hotel-{hotelId}-*.jpg").Length;
             var photoCounter = existingAdditionalPhotos + 1;
 
-            // Обрабатываем каждый загруженный файл
             foreach (var file in files)
             {
-                // Получаем расширение файла и проверяем, что это изображение
                 var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
                 if (extension != ".jpg" && extension != ".jpeg" && extension != ".png" && extension != ".gif")
                 {
-                    // Пропускаем не-изображения, но продолжаем обработку остальных
                     continue;
                 }
 
-                // Формируем имя файла в формате "hotel-1.jpg", "hotel-2.jpg" и т.д.
                 var fileName = $"hotel-{hotelId}-{photoCounter}{extension}";
                 var filePath = Path.Combine(hotelFolderPath, fileName);
 
-                // Сохраняем файл на диск
+                // save file to the disk
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
                 }
 
-                // Добавляем URL сохраненного изображения в список для возврата
+                // add the URL of the saved image to the return list
                 uploadedUrls.Add($"/images/{folderName}/{fileName}");
 
-                // Увеличиваем счетчик для следующего фото
                 photoCounter++;
             }
 
-            // Возвращаем список URL загруженных изображений
             return Ok(new { imageUrls = uploadedUrls });
         }
 

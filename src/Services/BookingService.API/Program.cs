@@ -11,7 +11,6 @@ using MassTransit;
 using BookingService.API.Consumers;
 using BookingService.API.Infrastructure.Handlers;
 
-//JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear(); //new
 var builder = WebApplication.CreateBuilder(args);
 
 // EF
@@ -57,14 +56,12 @@ builder.Services.AddHealthChecks()
 // HttpClient for RoomService
 builder.Services.AddHttpClient<IRoomServiceClient, RoomServiceClient>(client =>
 {
-    //var roomServiceUrl = builder.Configuration["Services:RoomService"] ?? throw new InvalidOperationException("RoomService URL not configured");
     client.BaseAddress = new Uri(roomServiceUrl);
 });
 
 // HttpClient for CatalogService
 builder.Services.AddHttpClient<IHotelServiceClient, HotelServiceClient>(client =>
 {
-    //var catalogServiceUrl = builder.Configuration["Services:CatalogService"] ?? throw new InvalidOperationException("CatalogService URL not configured");
     client.BaseAddress = new Uri(catalogServiceUrl);
 });
 
@@ -75,7 +72,6 @@ builder.Services.AddTransient<BearerTokenHandler>();
 // HttpClient for PaymentService (with Bearer token propagation)
 builder.Services.AddHttpClient<IPaymentServiceClient, PaymentServiceClient>(client =>
 {
-    //var paymentServiceUrl = builder.Configuration["Services:PaymentService"] ?? throw new InvalidOperationException("PaymentService URL not configured");
     client.BaseAddress = new Uri(paymentServiceUrl);
 })
 .AddHttpMessageHandler<BearerTokenHandler>();
@@ -117,8 +113,6 @@ builder.Services
                                             Encoding.UTF8.GetBytes(
                                                 builder.Configuration["Jwt:Key"]!)),
             ValidateIssuerSigningKey = true,
-            // get ClaimType.Name from "sub"
-            //NameClaimType            = JwtRegisteredClaimNames.Sub
             NameClaimType            = ClaimTypes.NameIdentifier
         };
     });

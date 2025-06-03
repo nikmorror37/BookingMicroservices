@@ -38,8 +38,8 @@ namespace RoomService.API.Consumers
                 return;
             }
 
-            // NOTE: флаг IsAvailable удалён из логики — доступность управляется проверкой перекрытия дат в BookingService.
-            // Просто публикуем успешное событие.
+            // NOTE: IsAvailable flag is removed from the logic - availability is controlled by checking overlapping dates in BookingService
+            // Just publicising the successful event
             await db.SaveChangesAsync();
 
             await context.Publish(new RoomReserved
