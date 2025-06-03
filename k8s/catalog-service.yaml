@@ -25,12 +25,20 @@ spec:
         # Environment parity with docker-compose definition
         - name: ASPNETCORE_ENVIRONMENT
           value: "Development"
+        - name: SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: catalog-app-secrets
+              key: SA_PASSWORD
         - name: ConnectionStrings__CatalogDb
-          value: "Server=host.docker.internal;Database=CatalogDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;Encrypt=False;"
+          value: "Server=host.docker.internal;Database=CatalogDb;User Id=sa;Password=$(SA_PASSWORD);TrustServerCertificate=True;Encrypt=False;"
+        - name: Jwt__Key
+          valueFrom:
+            secretKeyRef:
+              name: catalog-app-secrets
+              key: JWT_KEY
         - name: EventBus__Host
           value: host.docker.internal
-        - name: Jwt__Key
-          value: 32plusloooooooongkey_min32symbols
         - name: Jwt__Issuer
           value: IdentityService.API
         - name: Jwt__Audience
