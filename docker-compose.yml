@@ -73,6 +73,8 @@ services:
       - Jwt__Issuer=IdentityService.API
       - Jwt__Audience=BookingService.API
       - ASPNETCORE_URLS=http://+:80
+    ports:
+      - "5023:80"  
     networks:
       - booking-net
 

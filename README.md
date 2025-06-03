@@ -54,6 +54,8 @@ Prometheus metrics (first lines):
 ```bash
 curl -s http://localhost:5023/metrics | head
 ```
+# if Docker container catalogservice is running:
+# http://localhost:5023/metrics
 
 Serilog JSON logs already stream to the same terminal window that runs `dotnet run`.
 
