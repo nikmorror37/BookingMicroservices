@@ -1,0 +1,78 @@
+name: .NET CI, Docker Build and Push
+
+on:
+  push:
+    branches: [ "main", "master" ] # Triggers on pushes to main or master
+  pull_request:
+    branches: [ "main", "master" ] # Triggers on PRs targeting main or master
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  REGISTRY: ghcr.io # GitHub Container Registry
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ./BookingMicroservices.sln
+
+      - name: Run tests
+        run: dotnet test ./BookingMicroservices.sln --no-restore --verbosity normal
+
+  build-and-push:
+    name: Build and Push Docker Images
+    needs: test # This job runs only if the 'test' job succeeds
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: # Define each service, its Dockerfile, and its image name (lowercase)
+          - { name: 'catalogservice', dockerfile: 'src/Services/CatalogService.API/Dockerfile' }
+          - { name: 'roomservice', dockerfile: 'src/Services/RoomService.API/Dockerfile' }
+          - { name: 'bookingservice', dockerfile: 'src/Services/BookingService.API/Dockerfile' }
+          - { name: 'apigateway', dockerfile: 'src/Services/ApiGateway/Dockerfile' }
+          - { name: 'identityservice', dockerfile: 'src/Services/IdentityService.API/Dockerfile' }
+          - { name: 'paymentservice', dockerfile: 'src/Services/PaymentService.API/Dockerfile' }
+          - { name: 'bookingwebapp', dockerfile: 'src/Web/BookingWebApp/Dockerfile' }
+    
+    permissions:
+      contents: read  # Needed to checkout the repository
+      packages: write # Needed to push packages (Docker images) to GHCR
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }} # GitHub username
+          password: ${{ secrets.GITHUB_TOKEN }} # Provided by GitHub Actions
+
+      - name: Build and push Docker image
+        env:
+          # Construct the full image name: ghcr.io/YourGitHubUsernameOrOrg/imagename
+          IMAGE_NAME: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service.name }}
+        run: |
+          echo "Building image ${{ env.IMAGE_NAME }} with Dockerfile ${{ matrix.service.dockerfile }}"
+          docker build -t "${{ env.IMAGE_NAME }}:${{ github.sha }}" -f "${{ matrix.service.dockerfile }}" .
+          echo "Pushing image ${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker push "${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+          # If this is a push to the main or master branch, also tag and push 'latest'
+          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "Tagging ${{ env.IMAGE_NAME }}:${{ github.sha }} as ${{ env.IMAGE_NAME }}:latest"
+            docker tag "${{ env.IMAGE_NAME }}:${{ github.sha }}" "${{ env.IMAGE_NAME }}:latest"
+            echo "Pushing image ${{ env.IMAGE_NAME }}:latest"
+            docker push "${{ env.IMAGE_NAME }}:latest"
+          fi 

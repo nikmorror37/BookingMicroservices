@@ -400,7 +400,7 @@ FodyWeavers.xsd
 *.sln.iml
 
 # Uploaded images folder (created by admin upload)
-# catalog-images/
+catalog-images/
 
 # ignore local environment files
 #.env
